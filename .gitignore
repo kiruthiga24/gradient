@@ -80,6 +80,7 @@ dmypy.json
 .jupyter/
 
 # Logs
+logs/
 *.log
 
 # IDEs & Editors
