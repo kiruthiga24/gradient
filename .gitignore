@@ -1,0 +1,122 @@
+*.env.*
+**/.env
+**/data/
+**/venv/
+**/.ipynb_checkpoints/
+**/.idea/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+*.hypothesis/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# pytype
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints/
+.jupyter/
+
+# Logs
+*.log
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Django stuff
+staticfiles/
+media/
+*.sqlite3
+
+# Flask instance folder
+instance/
+
+# Local settings
+local_settings.py
+
+# Environment variables
+*.env
+*.env.*
+.envrc
+
+# Databases
+*.db
+*.sql
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# macOS / Windows artifacts
+.DS_Store
+Thumbs.db
+
+# Snowflake/cache files (optional)
+*.p7s
