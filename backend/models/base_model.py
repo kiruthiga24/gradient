@@ -190,6 +190,7 @@ class Signals(BaseModel, Base):
     signal_type = Column(String(100))          # churn, growth, risk etc.
     signal_strength = Column(Numeric(5,2))
     detected_at = Column(DateTime, server_default=func.now())
+    extras = Column(JSONB)
 
 class ChurnRiskAssessments(BaseModel, Base):
     __tablename__ = "churn_risk_assessments"
@@ -278,3 +279,13 @@ class AgentMemory(BaseModel, Base):
     memory_payload = Column(JSONB)
     created_at = Column(DateTime, server_default=func.now())
 
+class LLMSignalPayloads(Base):
+    __tablename__ = "llm_signal_payloads"
+
+    payload_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    use_case_name = Column(String(100), nullable=False)
+    final_score = Column(Numeric(5, 2), nullable=False)
+    payload_json = Column(JSONB, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
