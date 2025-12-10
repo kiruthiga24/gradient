@@ -360,3 +360,83 @@ class ExpansionDeck(Base):
     deck_outline = Column(JSONB, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
+    
+
+class QbrRcaAnalysis(Base):
+    __tablename__ = "qbr_rca_analysis"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    trends = Column(JSONB, nullable=True)
+    root_causes = Column(JSONB, nullable=True)
+    signals = Column(JSONB, nullable=True)
+    kpi_summary = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QbrBrief(Base):
+    __tablename__ = "qbr_briefs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    executive_summary = Column(Text, nullable=True)
+    key_wins = Column(JSONB, nullable=True)
+    key_risks = Column(JSONB, nullable=True)
+    opportunities_summary = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QbrOpportunity(Base):
+    __tablename__ = "qbr_opportunities"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    type = Column(Text, nullable=False)  # "upsell", "cross-sell", "whitespace"
+    sku = Column(Text, nullable=True)
+    rationale = Column(Text, nullable=True)
+    estimated_value = Column(Numeric, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QbrAction(Base):
+    __tablename__ = "qbr_actions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    title = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    priority = Column(Text, nullable=True)  # High / Medium / Low
+    type = Column(Text, nullable=True)      # meeting / email / task
+    assignee_suggestion = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QbrDeck(Base):
+    __tablename__ = "qbr_decks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    deck_title = Column(Text, nullable=False)
+    slides = Column(JSONB, nullable=True)  # JSON array of slides
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QbrTalkingPoints(Base):
+    __tablename__ = "qbr_talking_points"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    talking_points = Column(JSONB, nullable=True)  # JSON array of bullet points
+
+    created_at = Column(DateTime, server_default=func.now())

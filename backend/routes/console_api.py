@@ -84,3 +84,57 @@ def run_expansion():
 
     finally:
         db.close()
+
+
+@console.route("/run/qbr/from-table", methods=["POST"])
+def run_qbr():
+    db = SessionLocal()
+
+    try:
+        logger.info("QBR LLM started successfully")
+
+        row = db.query(LLMSignalPayloads) \
+        .filter(LLMSignalPayloads.use_case_name == "qbr_auto_generation") \
+        .order_by(LLMSignalPayloads.created_at.desc()) \
+        .limit(1) \
+        .first()
+
+
+        if not row:
+            return jsonify({"error": "No qbr payload found"}), 404
+        
+
+        print("*********")
+        print("Row", row)
+
+        payload_id = row.payload_id
+        score = row.final_score
+        agent_run_id = row.agent_run_id
+        print(agent_run_id)
+        payload_json = row.payload_json
+        payload = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+        payload["payload_id"] = str(payload_id)
+        payload["final_score"] = score
+
+        print("Payload", payload)
+
+        # Call orchestrator
+        result = llm.run_pipeline(
+            db,
+            use_case="qbr",
+            payload=payload,
+            agent_run_id=agent_run_id
+        )
+
+        return jsonify({
+            "payload_id": str(payload_id),
+            "status": "processed",
+            "llm_output": result
+        })
+
+    except Exception as e:
+        logger.error(f"Signal detection failed: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+    finally:
+        db.close()
