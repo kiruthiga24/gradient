@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, UUID, DateTime, Date, Numeric, ForeignKey, Text
+from sqlalchemy import Column, String, UUID, DateTime, Date, Numeric, ForeignKey, Text, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -288,4 +288,75 @@ class LLMSignalPayloads(Base):
     use_case_name = Column(String(100), nullable=False)
     final_score = Column(Numeric(5, 2), nullable=False)
     payload_json = Column(JSONB, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+class ExpansionRcaAnalysis(Base):
+    __tablename__ = "expansion_rca_analysis"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    usage_anomalies = Column(JSONB, nullable=True)
+    competitor_dependency = Column(JSONB, nullable=True)
+    bom_gaps = Column(JSONB, nullable=True)
+    revenue_leakage_estimate = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ExpansionBrief(Base):
+    __tablename__ = "expansion_briefs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    brief_summary = Column(Text, nullable=False)
+    whitespace_opportunities = Column(JSONB, nullable=True)
+    cross_sell_targets = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ExpansionRevenueEstimate(Base):
+    __tablename__ = "expansion_revenue_estimates"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    estimated_monthly_revenue = Column(Numeric, nullable=False)
+    estimated_annual_revenue = Column(Numeric, nullable=False)
+    currency = Column(String(10), nullable=False)
+
+    assumptions = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ExpansionRecommendation(Base):
+    __tablename__ = "expansion_recommendations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    priority = Column(Integer, nullable=False)
+    recommendation_type = Column(String(50), nullable=False)
+
+    target_sku = Column(String(100), nullable=True)
+    rationale = Column(Text, nullable=True)
+    expected_lift = Column(Numeric, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ExpansionDeck(Base):
+    __tablename__ = "expansion_decks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    deck_title = Column(Text, nullable=False)
+    slide_count = Column(Integer, nullable=False)
+
+    deck_outline = Column(JSONB, nullable=True)
+
     created_at = Column(DateTime, server_default=func.now())

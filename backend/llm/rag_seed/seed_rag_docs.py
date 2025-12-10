@@ -1,8 +1,8 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from llm.rag_store import add_documents
+from rag_store import add_documents
 
-docs = [
+churn_docs = [
     # 1. SLA / Contract Documents
     ("SLA_Penalty_Thresholds",
      """Customers are contractually entitled to on-time delivery service levels of 95% or higher.
@@ -117,9 +117,9 @@ Focus on impact, mitigation, and next steps.""")
 # LOAD INTO CHROMADB
 # -------------------------
 
-documents = [content for (_, content) in docs]
-metadatas = [{"title": title} for (title, _) in docs]
+documents = [content for (_, content) in churn_docs]
+metadatas = [{"title": title, "use_case": "churn"} for (title, _) in churn_docs]
 
-print(f"Adding {len(documents)} documents to ChromaDB…")
+print(f"Adding {len(documents)} churn documents to ChromaDB…")
 add_documents(documents, metadatas)
 print("RAG seeding complete.")
