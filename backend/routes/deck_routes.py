@@ -1,0 +1,24 @@
+from flask import Blueprint, request, send_file, jsonify
+from utils.logger import logger
+from utils.deck_generator import *
+import uuid
+import os
+
+deck_bp = Blueprint("ppt", __name__)
+
+@deck_bp.route("/generate_deck", methods=["POST"])
+def generate_ppt():
+    logger.info("Received request to generate DECK")
+
+    content = request.json.get("content")
+    if not content:
+        return jsonify({"error": "content is required"}), 400
+    
+    file_name = f"deck_{uuid.uuid4()}.pptx"
+    file_path = os.path.join("generated_decks", file_name)
+
+    os.makedirs("generated_decks", exist_ok=True)
+
+    output = generate_deck(content, file_path)
+            
+    return send_file(output, as_attachment=True)

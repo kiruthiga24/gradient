@@ -4,3 +4,4 @@ psycopg2==2.9.11
 SQLAlchemy==2.0.44
 psycopg2-binary==2.9.11
 python-dotenv==1.2.1
+python-pptx==1.0.2

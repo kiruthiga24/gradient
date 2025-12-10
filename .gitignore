@@ -121,3 +121,5 @@ Thumbs.db
 
 # Snowflake/cache files (optional)
 *.p7s
+
+generated_decks
