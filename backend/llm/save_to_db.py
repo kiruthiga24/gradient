@@ -3,6 +3,12 @@
 import uuid
 from models.base_model import ExpansionRcaAnalysis, ExpansionBrief, ExpansionDeck, ExpansionRecommendation, ExpansionRevenueEstimate, QbrAction, QbrBrief, QbrDeck, QbrOpportunity, QbrRcaAnalysis, QbrTalkingPoints
 
+from models.base_model import (
+    QualityRcaAnalysis,
+    QualityBrief,
+    QualityAction,
+    QualityEmail,
+)
 
 def insert_expansion_rca(db, rca, agent_run_id):
     try:
@@ -246,6 +252,92 @@ def insert_qbr_talking_points(db, talking_points, agent_run_id):
         db.close()
 
 
+def insert_quality_rca(db, rca, agent_run_id, account_id):
+    try:
+        row = QualityRcaAnalysis(
+            id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            correlated_factors=rca.get("correlated_factors", {}),
+            trends=rca.get("trends", {}),
+            defect_patterns=rca.get("defect_patterns", {}),
+            total_incidents=rca.get("total_incidents", 0),
+            notes=rca.get("notes"),
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ Quality RCA insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Quality RCA insert failed:", str(e))
+
+
+def insert_quality_brief(db, brief, agent_run_id, account_id):
+    try:
+        row = QualityBrief(
+            id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            executive_summary=brief.get("executive_summary"),
+            key_findings=brief.get("key_findings", []),
+            risk_level=brief.get("risk_level"),
+            impact_estimate=brief.get("impact_estimate"),
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ Quality Brief insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Quality Brief insert failed:", str(e))
+
+
+def insert_quality_actions(db, actions, agent_run_id, account_id):
+    try:
+        for act in actions.get("actions", []):
+            row = QualityAction(
+                id=uuid.uuid4(),
+                agent_run_id=agent_run_id,
+                account_id=account_id,
+                title=act.get("title"),
+                description=act.get("description"),
+                priority=act.get("priority"),
+                action_type=act.get("action_type"),
+                assignee_suggestion=act.get("assignee_suggestion"),
+                expected_impact=act.get("expected_impact", {}),
+            )
+            db.add(row)
+
+        db.commit()
+        print("✅ Quality Actions insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Quality Actions insert failed:", str(e))
+
+
+def insert_quality_email(db, email, agent_run_id, account_id):
+    try:
+        row = QualityEmail(
+            id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            subject=email.get("subject"),
+            body=email.get("body"),
+            to_address=email.get("to_address"),
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ Quality Email insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Quality Email insert failed:", str(e))
+
 def save_expansion_output(db, payload, agent_run_id):
     insert_expansion_rca(db, payload["rca"], agent_run_id)
     insert_expansion_brief(db, payload["brief"], agent_run_id)
@@ -260,3 +352,12 @@ def save_qbr_output(db, payload, agent_run_id):
     insert_qbr_actions(db, payload["actions"], agent_run_id)
     insert_qbr_deck(db, payload["deck"], agent_run_id)
     insert_qbr_talking_points(db, payload["talking_points"], agent_run_id)
+
+# Orchestrated save wrapper
+
+def save_quality_output(db, payload, agent_run_id):
+    insert_quality_rca(db, payload["rca"], agent_run_id, payload["account_id"])
+    insert_quality_brief(db, payload["brief"], agent_run_id, payload["account_id"])
+    insert_quality_actions(db, payload["actions"], agent_run_id, payload["account_id"])
+    insert_quality_email(db, payload["email"], agent_run_id, payload["account_id"])
+

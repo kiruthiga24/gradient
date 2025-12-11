@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, UUID, DateTime, Date, Numeric, ForeignKey, Text, Integer
+from sqlalchemy import Column, String, UUID, DateTime, Date, Numeric, ForeignKey, Text, Integer, Float
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -145,6 +145,16 @@ class QualityIncidents(BaseModel, Base):
     defect_type = Column(String(255))
     severity = Column(String(50))
     resolution_status = Column(String(50))
+    production_line = Column(String, nullable=True)
+    shift = Column(String, nullable=True)
+
+    supplier_name = Column(String, nullable=True)
+    supplier_lot = Column(String, nullable=True)
+    material_batch = Column(String, nullable=True)
+
+    description = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
 
 class OeeMetrics(BaseModel, Base):
     __tablename__ = "oee_metrics"
@@ -360,7 +370,7 @@ class ExpansionDeck(Base):
     deck_outline = Column(JSONB, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
-    
+
 
 class QbrRcaAnalysis(Base):
     __tablename__ = "qbr_rca_analysis"
@@ -438,5 +448,76 @@ class QbrTalkingPoints(Base):
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
 
     talking_points = Column(JSONB, nullable=True)  # JSON array of bullet points
+
+    created_at = Column(DateTime, server_default=func.now())
+
+class QualityRcaAnalysis(Base):
+    __tablename__ = "quality_rca_analysis"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    # structured RCA fields
+    correlated_factors = Column(JSONB, nullable=True)
+    trends = Column(JSONB, nullable=True)
+    defect_patterns = Column(JSONB, nullable=True)
+
+    total_incidents = Column(Integer, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QualityBrief(Base):
+    __tablename__ = "quality_briefs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    executive_summary = Column(Text, nullable=True)
+
+    key_findings = Column(JSONB, nullable=True)      # list of strings
+    risk_level = Column(String, nullable=True)       # High/Medium/Low
+    impact_estimate = Column(Float, nullable=True)   # numeric COPQ estimate
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QualityAction(Base):
+    __tablename__ = "quality_actions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+
+    priority = Column(String, nullable=True)          # High/Medium/Low
+    action_type = Column(String, nullable=True)       # replacement / audit / investigation / meeting
+    assignee_suggestion = Column(String, nullable=True)
+
+    expected_impact = Column(JSONB, nullable=True)    # structured JSON
+
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class QualityEmail(Base):
+    __tablename__ = "quality_emails"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    subject = Column(String, nullable=True)
+    body = Column(Text, nullable=True)
+
+    to_address = Column(String, nullable=True)  # KAM can override later
 
     created_at = Column(DateTime, server_default=func.now())

@@ -1,10 +1,12 @@
-import json, uuid
+import json, uuid, re
 import json
 from decimal import Decimal
+from datetime import datetime, timedelta
+from models.base_model import QualityIncidents
 
 from .rag_seed.rag_store import query_docs
 from .llm_factory import get_llm
-from .save_to_db import save_expansion_output, save_qbr_output
+from .save_to_db import save_expansion_output, save_qbr_output, save_quality_output
 
 from .chains.rca_chain import build_rca_chain
 from .chains.brief_chain import build_brief_chain
@@ -23,6 +25,14 @@ from .qbr_chains.deck_chain import build_qbr_deck_chain
 from .qbr_chains.opportunities_chain import build_qbr_opportunity_chain
 from .qbr_chains.rca_chain import build_qbr_rca_chain
 from .qbr_chains.talking_chain import build_qbr_talk_chain 
+
+from .quality_chain.rca_chain import build_quality_rca_chain
+from .quality_chain.brief_chain import build_quality_brief_chain
+from .quality_chain.action_chain import build_quality_action_chain
+from .quality_chain.email_chain import build_quality_email_chain
+
+# and reuse json_safe, parse_json_safe already in file
+
 
 
 def json_safe(obj):
@@ -86,6 +96,12 @@ class LLMOrchestrator:
         self.qbr_deck_chain = None
         self.qbr_talk_chain = None
 
+        # ---------- Use Case 4: Quality -----------
+        self.quality_rca_chain = None
+        self.quality_brief_chain = None
+        self.quality_action_chain = None
+        self.quality_email_chain = None
+
         self._init_llm()
     
     # ----------------------------
@@ -141,6 +157,20 @@ class LLMOrchestrator:
         if self.qbr_talk_chain is None:
             self.qbr_talk_chain = build_qbr_talk_chain(self.llm)
     
+    def _init_quality_chains(self):
+        if self.quality_rca_chain is None:
+            self.quality_rca_chain = build_quality_rca_chain(self.llm)
+
+        if self.quality_brief_chain is None:
+            self.quality_brief_chain = build_quality_brief_chain(self.llm)
+
+        if self.quality_action_chain is None:
+            self.quality_action_chain = build_quality_action_chain(self.llm)
+            
+        if self.quality_email_chain is None:
+            self.quality_email_chain = build_quality_email_chain(self.llm)
+
+    
     # ----------------------------
     # Entry point
     # ----------------------------
@@ -168,6 +198,15 @@ class LLMOrchestrator:
             except Exception as e:
                 print("save_qbr_output failed:", e)
             return qbr_payload
+        
+        # in LLMOrchestrator.run_pipeline
+        if use_case == "quality_incident":
+            quality_payload = self._run_quality_pipeline(db, payload)
+            print(json.dumps(quality_payload, indent=4, sort_keys=True))
+            print(json_safe(quality_payload))
+            save_quality_output(db, quality_payload, agent_run_id)
+            return quality_payload
+
 
         raise ValueError(f"Unsupported use_case: {use_case}")
 
@@ -369,3 +408,116 @@ class LLMOrchestrator:
             "deck": deck,
             "talking_points": talking_points
         }
+    
+    def _run_quality_pipeline(self, db, payload: dict):
+        """
+        Quality pipeline: Fetch incidents -> RCA -> Brief -> Actions -> Email
+        """
+        # Lazy init all quality chains
+        self._init_quality_chains()
+
+        print("=== QUALITY PIPELINE STARTED ===")
+
+        # ----------------------------------------------------------------------
+        # 1) FETCH INCIDENT DATA AGAIN FROM DB (last 30 days)
+        # ----------------------------------------------------------------------
+        account_id = payload.get("account", {}).get("account_id")
+        if not account_id:
+            raise ValueError("quality_incident pipeline requires payload.account.account_id")
+
+        cutoff = datetime.utcnow().date() - timedelta(days=30)
+
+        incidents = (
+            db.query(QualityIncidents)
+            .filter(
+                QualityIncidents.account_id == account_id,
+                QualityIncidents.incident_date >= cutoff
+            )
+            .order_by(QualityIncidents.incident_date.desc())
+            .all()
+        )
+
+        incident_rows = []
+        for inc in incidents:
+            incident_rows.append({
+                "incident_id": str(inc.incident_id),
+                "incident_date": inc.incident_date.isoformat(),
+                "defect_type": inc.defect_type,
+                "severity": inc.severity,
+                "resolution_status": inc.resolution_status,
+                "line": inc.production_line,
+                "shift": inc.shift,
+                "supplier": inc.supplier_name,
+                "supplier_lot": inc.supplier_lot,
+                "material_batch": inc.material_batch,
+                "description": inc.description,
+            })
+
+        print(f"Fetched {len(incident_rows)} incidents from DB for RCA")
+
+        # ----------------------------------------------------------------------
+        # 2) RAG RETRIEVAL
+        # ----------------------------------------------------------------------
+        account_name = payload.get("account", {}).get("account_name") or ""
+        rag_docs = query_docs(account_name, k=50, use_case="quality_incident")
+        rag_text = "\n\n".join([d["text"] for d in rag_docs])
+        print(f"RAG docs found: {len(rag_docs)}")
+
+        # ----------------------------------------------------------------------
+        # 3) RCA
+        # ----------------------------------------------------------------------
+        rca_inputs = {
+            "context": json_safe({
+                "signal_payload": payload,
+                "incident_data": incident_rows
+            }),
+            "rag": rag_text
+        }
+
+        rca_raw = self.quality_rca_chain.invoke(rca_inputs)
+        rca = parse_json_safe(rca_raw)
+        print("RCA parsed")
+        print("RCA:", json_safe(rca))
+
+        # ----------------------------------------------------------------------
+        # 4) BRIEF
+        # ----------------------------------------------------------------------
+        brief_inputs = {"rca": json_safe(rca)}
+        brief_raw = self.quality_brief_chain.invoke(brief_inputs)
+        brief = parse_json_safe(brief_raw)
+        print("BRIEF parsed")
+        print("BRIEF:", json_safe(brief))
+
+
+        # ----------------------------------------------------------------------
+        # 5) ACTIONS
+        # ----------------------------------------------------------------------
+        action_inputs = {"brief": json_safe(brief), "rca": json_safe(rca)}
+        actions_raw = self.quality_action_chain.invoke(action_inputs)
+        actions = parse_json_safe(actions_raw)
+        print("ACTIONS parsed")
+        print("ACTIONS:", json_safe(actions))
+
+        # ----------------------------------------------------------------------
+        # 6) EMAIL
+        # ----------------------------------------------------------------------
+        email_inputs = {"brief": json_safe(brief), "actions": json_safe(actions)}
+        email_raw = self.quality_email_chain.invoke(email_inputs)
+        email = parse_json_safe(email_raw)
+        print("EMAIL parsed")
+        print("EMAIL:", json_safe(email))
+
+
+        # ----------------------------------------------------------------------
+        # 7) FINAL ASSEMBLED OUTPUT
+        # ----------------------------------------------------------------------
+        result = {
+            "account_id": account_id,
+            "use_case": "quality_incident",
+            "rca": rca,
+            "brief": brief,
+            "actions": actions,
+            "email": email
+        }
+        return result
+
