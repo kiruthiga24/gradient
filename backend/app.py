@@ -58,5 +58,7 @@ app.register_blueprint(agent_memory_bp)
 app.register_blueprint(console)
 
 
+
 if __name__ == "__main__":
+    
     app.run(port=5000, debug=True)        # Backend runs here
