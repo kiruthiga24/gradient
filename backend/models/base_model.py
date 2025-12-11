@@ -305,6 +305,7 @@ class ExpansionRcaAnalysis(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     usage_anomalies = Column(JSONB, nullable=True)
     competitor_dependency = Column(JSONB, nullable=True)
@@ -319,6 +320,7 @@ class ExpansionBrief(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     brief_summary = Column(Text, nullable=False)
     whitespace_opportunities = Column(JSONB, nullable=True)
@@ -332,6 +334,7 @@ class ExpansionRevenueEstimate(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     estimated_monthly_revenue = Column(Numeric, nullable=False)
     estimated_annual_revenue = Column(Numeric, nullable=False)
@@ -347,6 +350,7 @@ class ExpansionRecommendation(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     priority = Column(Integer, nullable=False)
     recommendation_type = Column(String(50), nullable=False)
@@ -363,6 +367,7 @@ class ExpansionDeck(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     deck_title = Column(Text, nullable=False)
     slide_count = Column(Integer, nullable=False)
@@ -377,6 +382,7 @@ class QbrRcaAnalysis(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     trends = Column(JSONB, nullable=True)
     root_causes = Column(JSONB, nullable=True)
@@ -391,6 +397,7 @@ class QbrBrief(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     executive_summary = Column(Text, nullable=True)
     key_wins = Column(JSONB, nullable=True)
@@ -405,6 +412,7 @@ class QbrOpportunity(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     type = Column(Text, nullable=False)  # "upsell", "cross-sell", "whitespace"
     sku = Column(Text, nullable=True)
@@ -419,7 +427,7 @@ class QbrAction(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     title = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     priority = Column(Text, nullable=True)  # High / Medium / Low
@@ -434,7 +442,7 @@ class QbrDeck(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     deck_title = Column(Text, nullable=False)
     slides = Column(JSONB, nullable=True)  # JSON array of slides
 
@@ -446,7 +454,7 @@ class QbrTalkingPoints(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     talking_points = Column(JSONB, nullable=True)  # JSON array of bullet points
 
     created_at = Column(DateTime, server_default=func.now())

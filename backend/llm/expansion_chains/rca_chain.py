@@ -9,7 +9,9 @@ You MUST return ONLY valid JSON.
 Do NOT include any explanation, headings, or notes.
 Do NOT wrap JSON in backticks.
 Do NOT add any text before or after the JSON.
-
+- Use decimal numbers only, no fractions
+- Replace any unknown value with 0 or null
+- Do not use Python None; use JSON null   
 Context: {context}
 RAG Docs: {rag}
 

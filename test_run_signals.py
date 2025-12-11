@@ -87,5 +87,5 @@ def run_quality_llm():
 if __name__ == "__main__":
     # run_signal_detection()
     # run_expansion_llm()
-    # run_qbr_llm()
-    run_quality_llm()
+    run_qbr_llm()
+    # run_quality_llm()

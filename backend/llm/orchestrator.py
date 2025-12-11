@@ -216,6 +216,10 @@ class LLMOrchestrator:
         self._initialize_chains()
         print("=== DEBUG: Starting pipeline ===")
         print(f"Payload: {json.dumps(payload, indent=2)}")
+
+        account_id = payload.get("account", {}).get("account_id")
+        if not account_id:
+            raise ValueError("quality_incident pipeline requires payload.account.account_id")
     
         # RAG retrieval
         rag_docs = query_docs(payload.get("account_name", ""), use_case="churn")
@@ -257,10 +261,12 @@ class LLMOrchestrator:
         # print(f"Email parsed: {email}")
 
         result = {
+            "use_case": "expansion",
             "rca": rca_raw or {},
             "brief": brief_raw or {},
             "actions": actions_raw or {},
-            "email": email_raw or {}
+            "email": email_raw or {},
+            "account_id": account_id
         }
         print(f"Final result: {json.dumps(result, indent=2)}")
         return result
@@ -270,6 +276,10 @@ class LLMOrchestrator:
         self._init_expansion_chains()
 
         print("=== EXPANSION PIPELINE STARTED ===")
+
+        account_id = payload.get("account", {}).get("account_id")
+        if not account_id:
+            raise ValueError("quality_incident pipeline requires payload.account.account_id")
 
         rag_docs = query_docs(
     query="""
@@ -343,7 +353,8 @@ class LLMOrchestrator:
             "brief": brief,
             "revenue": revenue,
             "actions": actions,
-            "deck": deck
+            "deck": deck,
+            "account_id": account_id
         }
     
     def _run_qbr_pipeline(self, payload: dict):
@@ -353,6 +364,11 @@ class LLMOrchestrator:
         self._init_qbr_chains()
 
         print("=== QBR PIPELINE STARTED ===")
+
+        account_id = payload.get("account", {}).get("account_id")
+        if not account_id:
+            raise ValueError("quality_incident pipeline requires payload.account.account_id")
+        
         # RAG retrieval scoped to qbr docs for this account
         account_name = payload.get("account", {}).get("account_name") or payload.get("account_name") or ""
         rag_docs = query_docs(account_name, k=50, use_case="qbr")
@@ -401,6 +417,7 @@ class LLMOrchestrator:
 
         return {
             "use_case": "qbr",
+            "account_id": account_id,
             "rca": rca,
             "brief": brief,
             "opportunities": opportunities,
