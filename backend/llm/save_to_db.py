@@ -18,6 +18,7 @@ def insert_expansion_rca(db, rca, agent_run_id, account_id):
         row = ExpansionRcaAnalysis(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,  # replace with real agent_run_id if available
+            account_id=account_id,
             usage_anomalies=rca.get("usage_anomalies"),
             competitor_dependency=rca.get("competitor_dependency"),
             bom_gaps=rca.get("bom_gaps"),
@@ -141,12 +142,12 @@ def insert_expansion_brief(db, brief, agent_run_id):
     finally:
         db.close()
 
-def insert_expansion_revenue(db, revenue, agent_run_id):
+def insert_expansion_revenue(db, revenue, agent_run_id, account_id):
     try:
         row = ExpansionRevenueEstimate(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
-
+            account_id=account_id,
             estimated_monthly_revenue=revenue.get("total_estimated_monthly_revenue", 0),
             estimated_annual_revenue=revenue.get("total_estimated_monthly_revenue", 0) * 12,
 
@@ -166,14 +167,14 @@ def insert_expansion_revenue(db, revenue, agent_run_id):
     finally:
         db.close()
 
-def insert_expansion_recommendations(db, actions, agent_run_id):
+def insert_expansion_recommendations(db, actions, agent_run_id, account_id):
     try:
         for idx, act in enumerate(actions.get("actions", []), start=1):
 
             row = ExpansionRecommendation(
                 id=uuid.uuid4(),
                 agent_run_id=agent_run_id,
-
+                account_id=account_id,
                 priority=1 if act["priority"] == "High" else 2,
 
                 recommendation_type=act.get("action_type"),
@@ -197,14 +198,14 @@ def insert_expansion_recommendations(db, actions, agent_run_id):
     finally:
         db.close()
 
-def insert_expansion_deck(db, deck, agent_run_id):
+def insert_expansion_deck(db, deck, agent_run_id, account_id):
     try:
         slides = deck.get("slides", [])
 
         row = ExpansionDeck(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
-
+            account_id=account_id,
             deck_title="Expansion Opportunity Analysis",
             slide_count=len(slides),
 
@@ -222,11 +223,12 @@ def insert_expansion_deck(db, deck, agent_run_id):
     finally:
         db.close()
 
-def insert_qbr_rca(db, rca, agent_run_id):
+def insert_qbr_rca(db, rca, agent_run_id, account_id):
     try:
         row = QbrRcaAnalysis(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
+            account_id=account_id,
             trends=rca.get("trends"),
             root_causes=rca.get("root_causes"),
             signals=rca.get("signals"),
@@ -241,11 +243,12 @@ def insert_qbr_rca(db, rca, agent_run_id):
     finally:
         db.close()
 
-def insert_qbr_brief(db, brief, agent_run_id):
+def insert_qbr_brief(db, brief, agent_run_id, account_id):
     try:
         row = QbrBrief(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
+            account_id=account_id,
             executive_summary=brief.get("executive_summary"),
             key_wins=brief.get("key_wins", []),
             key_risks=brief.get("key_risks", []),
@@ -260,12 +263,13 @@ def insert_qbr_brief(db, brief, agent_run_id):
     finally:
         db.close()
 
-def insert_qbr_opportunities(db, opportunities, agent_run_id):
+def insert_qbr_opportunities(db, opportunities, agent_run_id, account_id):
     try:
         for opp in opportunities.get("opportunities", []):
             row = QbrOpportunity(
                 id=uuid.uuid4(),
                 agent_run_id=agent_run_id,
+                account_id=account_id,
                 type=opp.get("type"),
                 sku=opp.get("sku"),
                 rationale=opp.get("rationale"),
@@ -280,12 +284,13 @@ def insert_qbr_opportunities(db, opportunities, agent_run_id):
     finally:
         db.close()
 
-def insert_qbr_actions(db, actions, agent_run_id):
+def insert_qbr_actions(db, actions, agent_run_id, account_id):
     try:
         for act in actions.get("actions", []):
             row = QbrAction(
                 id=uuid.uuid4(),
                 agent_run_id=agent_run_id,
+                account_id=account_id,
                 title=act.get("title"),
                 description=act.get("description"),
                 priority=act.get("priority"),
@@ -301,12 +306,13 @@ def insert_qbr_actions(db, actions, agent_run_id):
     finally:
         db.close()
 
-def insert_qbr_deck(db, deck, agent_run_id):
+def insert_qbr_deck(db, deck, agent_run_id, account_id):
     try:
         slides = deck.get("slides", [])
         row = QbrDeck(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
+            account_id=account_id,
             deck_title=deck.get("deck_title", "QBR Deck"),
             slides=slides
         )
@@ -319,11 +325,12 @@ def insert_qbr_deck(db, deck, agent_run_id):
     finally:
         db.close()
 
-def insert_qbr_talking_points(db, talking_points, agent_run_id):
+def insert_qbr_talking_points(db, talking_points, agent_run_id, account_id):
     try:
         row = QbrTalkingPoints(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
+            account_id=account_id,
             talking_points=talking_points.get("talking_points", [])
         )
         db.add(row)
@@ -497,19 +504,19 @@ def insert_quality_email(db, email, agent_run_id, account_id):
         print("❌ Quality Email insert failed:", str(e))
 
 def save_expansion_output(db, payload, agent_run_id):
-    insert_expansion_rca(db, payload["rca"], agent_run_id)
-    insert_expansion_brief(db, payload["brief"], agent_run_id)
-    insert_expansion_revenue(db, payload["revenue"], agent_run_id)
-    insert_expansion_recommendations(db, payload["actions"], agent_run_id)
-    insert_expansion_deck(db, payload["deck"], agent_run_id)
+    insert_expansion_rca(db, payload["rca"], agent_run_id, payload["account_id"])
+    insert_expansion_brief(db, payload["brief"], agent_run_id, payload["account_id"])
+    insert_expansion_revenue(db, payload["revenue"], agent_run_id, payload["account_id"])
+    insert_expansion_recommendations(db, payload["actions"], agent_run_id, payload["account_id"])
+    insert_expansion_deck(db, payload["deck"], agent_run_id, payload["account_id"])
 
 def save_qbr_output(db, payload, agent_run_id):
-    insert_qbr_rca(db, payload["rca"], agent_run_id)
-    insert_qbr_brief(db, payload["brief"], agent_run_id)
-    insert_qbr_opportunities(db, payload["opportunities"], agent_run_id)
-    insert_qbr_actions(db, payload["actions"], agent_run_id)
-    insert_qbr_deck(db, payload["deck"], agent_run_id)
-    insert_qbr_talking_points(db, payload["talking_points"], agent_run_id)
+    insert_qbr_rca(db, payload["rca"], agent_run_id, payload["account_id"])
+    insert_qbr_brief(db, payload["brief"], agent_run_id, payload["account_id"])
+    insert_qbr_opportunities(db, payload["opportunities"], agent_run_id, payload["account_id"])
+    insert_qbr_actions(db, payload["actions"], agent_run_id, payload["account_id"])
+    insert_qbr_deck(db, payload["deck"], agent_run_id, payload["account_id"])
+    insert_qbr_talking_points(db, payload["talking_points"], agent_run_id, payload["account_id"])
 
 # Orchestrated save wrapper
 
