@@ -4,6 +4,8 @@ from utils.logger import logger
 
 from services.signal_detector.runner import run_all_detectors
 from services.crm.zoho_sender import send_email_to_zoho
+from services.email.email_sender import send_email
+from models.base_model import EmailDrafts
 
 console = Blueprint("console", __name__)
 
@@ -29,32 +31,72 @@ def run_signals():
     finally:
         db.close()
 
-
-@console.route("/crm/send-email", methods=["POST"])
-def crm_send_email():
+@console.route("/email/send", methods=["POST"])
+def send_email_route():
+    """
+    Send an email using a draft from the database.
+    POST JSON body:
+    {
+        "email_id": "UUID of the draft you want to send"
+    }
+    """
     db = SessionLocal()
+    data = request.get_json()
+    email_id = data.get("email_id")
 
-    try:
-        data = request.get_json()
-        email_id = data.get("email_id")
+    from_email = "sunil@saturam.com"
 
-        if not email_id:
-            return jsonify({"status": "error", "message": "email_id is required"}), 400
+    if not email_id:
+        return jsonify({"status": "error", "message": "Missing email_id"}), 400
 
-        logger.info(f"CRM Email sending started for email_id: {email_id}")
-
-        result = send_email_to_zoho(db, email_id)
-
-        logger.info("CRM Email sent successfully")
-
-        return jsonify({
-            "status": "success",
-            "zoho_response": result
-        }), 200
-
-    except Exception as e:
-        logger.error(f"CRM email send failed: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-    finally:
+    # Fetch draft from DB
+    draft = db.query(EmailDrafts).filter(EmailDrafts.email_id == email_id).first()
+    if not draft:
         db.close()
+        return jsonify({"status": "error", "message": "Draft not found"}), 404
+
+    # Send email using SMTP_USER from email_sender.py
+    success = send_email(
+        from_email,
+        to_email=draft.to_email,
+        subject=draft.subject,
+        body_text=draft.body_text
+    )
+
+    db.close()
+
+    if success:
+        return jsonify({"status": "success", "message": f"Email sent to {draft.to_email}"}), 200
+    else:
+        return jsonify({"status": "error", "message": "Failed to send email"}), 500
+
+
+
+# @console.route("/crm/send-email", methods=["POST"])
+# def crm_send_email():
+#     db = SessionLocal()
+
+#     try:
+#         data = request.get_json()
+#         email_id = data.get("email_id")
+
+#         if not email_id:
+#             return jsonify({"status": "error", "message": "email_id is required"}), 400
+
+#         logger.info(f"CRM Email sending started for email_id: {email_id}")
+
+#         result = send_email_to_zoho(db, email_id)
+
+#         logger.info("CRM Email sent successfully")
+
+#         return jsonify({
+#             "status": "success",
+#             "zoho_response": result
+#         }), 200
+
+#     except Exception as e:
+#         logger.error(f"CRM email send failed: {str(e)}")
+#         return jsonify({"status": "error", "message": str(e)}), 500
+
+#     finally:
+#         db.close()

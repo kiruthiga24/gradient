@@ -1,6 +1,6 @@
 import requests
 from utils.logger import logger
-from database.models import EmailDraft
+from models.base_model import EmailDrafts
 from sqlalchemy.orm import Session
 
 ZOHO_SENDMAIL_URL = "https://www.zohoapis.com/crm/v2.1/Emails/send"
@@ -14,7 +14,7 @@ def send_email_to_zoho(db: Session, email_id: str):
     """
 
     # 1. Fetch Email from DB
-    email_row = db.query(EmailDraft).filter(EmailDraft.email_id == email_id).first()
+    email_row = db.query(EmailDrafts).filter(EmailDrafts.email_id == email_id).first()
     if not email_row:
         raise Exception("Email not found in database")
 
