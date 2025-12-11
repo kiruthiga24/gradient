@@ -1,10 +1,10 @@
 import requests
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from utils.logger import logger
 
-load_dotenv()
-
+# load_dotenv()
+# my https://api-console.zoho.com/client/ server based application access token, generate if these are not. 
 ZOHO_ACCESS_TOKEN = "1000.e6016156bb7339cb92d1c0b2d6864706.390c1b279642e89554285591538f352d"#os.getenv("ZOHO_ACCESS_TOKEN")  
 ZOHO_REFRESH_TOKEN = "1000.9cfbdd3da1803ee4ceaf02aeafbf37a3.2e49915aab0bb4599bd56be1b4d3dac0"#os.getenv("ZOHO_REFRESH_TOKEN")  
 ZOHO_CLIENT_ID = "1000.3SYL9SPU7HXLEIU6EGMNYB01EJZ71E"#os.getenv("ZOHO_CLIENT_ID")

@@ -45,6 +45,7 @@ def send_email_route():
     data = request.get_json()
     email_id = data.get("email_id")
 
+    #my email
     from_email = "sunil@saturam.com"
 
     if not email_id:
