@@ -1,64 +1,71 @@
 import requests
+import os
+from dotenv import load_dotenv
 from utils.logger import logger
-from models.base_model import EmailDrafts
-from sqlalchemy.orm import Session
 
-ZOHO_SENDMAIL_URL = "https://www.zohoapis.com/crm/v2.1/Emails/send"
-ZOHO_NOTES_URL = "https://www.zohoapis.com/crm/v2.1/Notes"
-ZOHO_ACCESS_TOKEN = "1000.e1588bfbcda09df374eb6594a5af895f.aa07b8175386156f94cbcc6be441f4da"   # Replace with environment variable later
+load_dotenv()
 
+ZOHO_ACCESS_TOKEN = "1000.e6016156bb7339cb92d1c0b2d6864706.390c1b279642e89554285591538f352d"#os.getenv("ZOHO_ACCESS_TOKEN")  
+ZOHO_REFRESH_TOKEN = "1000.9cfbdd3da1803ee4ceaf02aeafbf37a3.2e49915aab0bb4599bd56be1b4d3dac0"#os.getenv("ZOHO_REFRESH_TOKEN")  
+ZOHO_CLIENT_ID = "1000.3SYL9SPU7HXLEIU6EGMNYB01EJZ71E"#os.getenv("ZOHO_CLIENT_ID")
+ZOHO_CLIENT_SECRET = "dbcd2bba02c9ec0b554df314c19ab71d2be7b11ce7"#os.getenv("ZOHO_CLIENT_SECRET")
 
-def send_email_to_zoho(db: Session, email_id: str):
-    """
-    Fetch email draft from DB and send to Zoho CRM via API.
-    """
+# Refresh token API
+def refresh_zoho_token():
+    url = "https://accounts.zoho.com/oauth/v2/token"
 
-    # 1. Fetch Email from DB
-    email_row = db.query(EmailDrafts).filter(EmailDrafts.email_id == email_id).first()
-    if not email_row:
-        raise Exception("Email not found in database")
-
-    logger.info("Email fetched successfully from DB")
-
-    # -----------------------------
-    # 2. Prepare Zoho CRM Payload
-    # -----------------------------
     payload = {
-        "from": {"email": "sunil@saturam.com"},          # Replace
-        "to": [{"email": email_row.to_email}],
-        "subject": email_row.subject,
-        "content": email_row.body_text
+        "refresh_token": ZOHO_REFRESH_TOKEN,
+        "client_id": ZOHO_CLIENT_ID,
+        "client_secret": ZOHO_CLIENT_SECRET,
+        "grant_type": "refresh_token"
     }
 
-    # -----------------------------
-    # 3. Send Email to Zoho CRM API
-    # -----------------------------
+    r = requests.post(url, data=payload)
+    data = r.json()
+
+    if "access_token" in data:
+        new_token = data["access_token"]
+        os.environ["ZOHO_ACCESS_TOKEN"] = new_token
+        logger.info("Zoho access token refreshed successfully.")
+        return new_token
+    
+    logger.error(f"Failed to refresh Zoho token: {data}")
+    return None
+
+
+# Create Task in Zoho CRM
+def create_zoho_crm_task(subject, description):
+    access_token = os.getenv("ZOHO_ACCESS_TOKEN")
+
+    url = "https://www.zohoapis.com/crm/v2/Tasks"
+
     headers = {
-        "Authorization": f"Zoho-oauthtoken {ZOHO_ACCESS_TOKEN}",
-        "Content-Type": "application/json"
+        "Authorization": f"Zoho-oauthtoken {access_token}"
     }
 
-    response = requests.post(ZOHO_SENDMAIL_URL, json=payload, headers=headers)
-
-    logger.info(f"Zoho API Response: {response.text}")
-
-    # Optional: Also store email as CRM note
-    save_as_crm_note(email_row, headers)
-
-    return response.json()
-
-
-def save_as_crm_note(email_row, headers):
-    note_payload = {
+    payload = {
         "data": [
             {
-                "Note_Title": email_row.subject,
-                "Note_Content": email_row.body_text,
-                "Parent_Id": email_row.crm_contact_id,   # Must map in your DB
-                "se_module": "Contacts"
+                "Subject": subject,
+                "Description": description,
+                "Status": "Not Started",
+                "Priority": "High"
             }
         ]
     }
 
-    response = requests.post(ZOHO_NOTES_URL, json=note_payload, headers=headers)
-    logger.info(f"Zoho Note Saved: {response.text}")
+    response = requests.post(url, json=payload, headers=headers)
+
+    # Handle token expiry
+    if response.status_code == 401:
+        logger.warning("Access token expired. Refreshing...")
+
+        new_token = refresh_zoho_token()
+        if not new_token:
+            return None
+
+        headers["Authorization"] = f"Zoho-oauthtoken {new_token}"
+        response = requests.post(url, json=payload, headers=headers)
+
+    return response.json()

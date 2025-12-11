@@ -9,8 +9,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, ".env"))
 
 # print(load_dotenv(dotenv_path=".env", override=True))
-DATABASE_URL = os.getenv("DATABASE_URL")
-# DATABASE_URL = "postgresql://postgres:admin#123@localhost:5432/postgres" ### to test in local
+# DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = "postgresql://postgres:admin#123@localhost:5432/postgres" ### to test in local
 # def get_db():
 #     return psycopg2.connect(
 #         host="localhost",

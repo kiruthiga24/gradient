@@ -3,9 +3,10 @@ from database import SessionLocal
 from utils.logger import logger
 
 from services.signal_detector.runner import run_all_detectors
-from services.crm.zoho_sender import send_email_to_zoho
+# from services.crm.zoho_sender import send_email_to_zoho
 from services.email.email_sender import send_email
 from models.base_model import EmailDrafts
+from services.crm.zoho_sender import create_zoho_crm_task
 
 console = Blueprint("console", __name__)
 
@@ -63,14 +64,29 @@ def send_email_route():
         body_text=draft.body_text
     )
 
-    db.close()
+    # db.close()
 
-    if success:
-        return jsonify({"status": "success", "message": f"Email sent to {draft.to_email}"}), 200
-    else:
+    # if success:
+    #     return jsonify({"status": "success", "message": f"Email sent to {draft.to_email}"}), 200
+    # else:
+    #     return jsonify({"status": "error", "message": "Failed to send email"}), 500
+
+    if not success:
         return jsonify({"status": "error", "message": "Failed to send email"}), 500
 
+    crm_result = create_zoho_crm_task(
+        subject=f"Follow-up Email Sent: {draft.subject}",
+        description=draft.body_text
+    )
 
+    if not crm_result:
+        return jsonify({"status": "error", "message": "Email sent but failed to create Zoho task"}), 500
+
+    return jsonify({
+        "status": "success",
+        "message": "Email sent and Zoho CRM task created",
+        "zoho_response": crm_result
+    }), 200
 
 # @console.route("/crm/send-email", methods=["POST"])
 # def crm_send_email():
