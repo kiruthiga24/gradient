@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 from database import SessionLocal
 from utils.logger import logger
-from models.base_model import LLMSignalPayloads
+from models.base_model import LLMSignalPayloads, QualityAction, QualityBrief, QualityEmail, QualityRcaAnalysis
 from llm.orchestrator import LLMOrchestrator
 import json
 from datetime import datetime, timezone
@@ -280,3 +280,104 @@ def get_left_pane_by_use_case(use_case):
         })
 
     return jsonify({"data": response})
+
+
+
+@console.route("/agent/data/quality/<account_id>/<agent_run_id>", methods=["GET"])
+def get_quality_json(account_id, agent_run_id):
+    """
+    Build final combined JSON for UI middle + right pane.
+    """
+    db = SessionLocal()
+
+    # ------------------------------
+    # 1. FETCH DB ROWS
+    # ------------------------------
+    rca = (
+        db.query(QualityRcaAnalysis)
+        .filter_by(agent_run_id=agent_run_id, account_id=account_id)
+        .order_by(QualityRcaAnalysis.created_at.desc())
+        .first()
+    )
+
+    brief = (
+        db.query(QualityBrief)
+        .filter_by(agent_run_id=agent_run_id, account_id=account_id)
+        .order_by(QualityBrief.created_at.desc())
+        .first()
+    )
+
+    actions = (
+        db.query(QualityAction)
+        .filter_by(agent_run_id=agent_run_id, account_id=account_id)
+        .order_by(QualityAction.created_at.desc())
+        .all()
+    )
+
+    email = (
+        db.query(QualityEmail)
+        .filter_by(agent_run_id=agent_run_id, account_id=account_id)
+        .order_by(QualityEmail.created_at.desc())
+        .first()
+    )
+
+    # Safety check
+    if not (rca and brief):
+        return {"error": "Missing RCA or Brief for this agent_run_id"}
+
+    # ------------------------------
+    # 2. FORMAT ACTIONS
+    # ------------------------------
+    actions_json = [
+        {
+            "title": act.title,
+            "description": act.description,
+            "priority": act.priority,
+            "assignee_suggestion": act.assignee_suggestion,
+            "expected_impact": act.expected_impact,
+            "type": act.action_type,
+        }
+        for act in actions
+    ]
+
+    # ------------------------------
+    # 3. BUILD FINAL JSON PAYLOAD
+    # ------------------------------
+    final_json = {
+        "use_case": "quality_incident",
+        "account_id": account_id,
+
+        # -------- MIDDLE PANE --------
+        "brief": {
+            "executive_summary": brief.executive_summary,
+            "key_findings": brief.key_findings,
+            "risk_level": brief.risk_level,
+            "impact_estimate": brief.impact_estimate,
+            "action_plan": brief.key_findings or []
+        },
+
+        "rca": {
+            "root_cause_summary": rca.defect_patterns,
+            "notes": rca.notes,
+            "total_incidents": rca.total_incidents,
+
+            "trends": rca.trends,
+            "correlated_factors": rca.correlated_factors,
+
+            # defect patterns → frontend
+            "defect_patterns": rca.defect_patterns,
+        },
+
+        # -------- RIGHT PANE --------
+        "actions": {
+            "value": actions_json
+        },
+
+        "email": {
+            "subject": email.subject if email else None,
+            "body": email.body if email else None,
+            "to_address": email.to_address if email else None,
+        }
+    }
+
+    return jsonify({"data": final_json})

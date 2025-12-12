@@ -1,4 +1,6 @@
 from flask import Flask
+from flask_cors import CORS
+
 from routes.health import test_bp
 from routes.accounts_routes import accounts_bp
 from routes.customers_routes import customers_bp
@@ -28,6 +30,7 @@ from routes.agent_memory_routes import agent_memory_bp
 from routes.console_api import console
 
 app = Flask(__name__)
+CORS(app)
 
 # Register Blueprints
 app.register_blueprint(accounts_bp)
