@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, UUID, DateTime, Date, Numeric, ForeignKey, Text
+from sqlalchemy import Column, String, UUID, DateTime, Date, Numeric, ForeignKey, Text, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -278,3 +278,34 @@ class AgentMemory(BaseModel, Base):
     memory_payload = Column(JSONB)
     created_at = Column(DateTime, server_default=func.now())
 
+class ExpansionRecommendation(Base):
+    __tablename__ = "expansion_recommendations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+
+    recommendation_type = Column(String(50), nullable=False)
+    recommendation_text = Column(Text, nullable=False)
+
+    record_id = Column(String(50)) # Zoho Module Record ID
+    customer_id = Column(String(50)) # Zoho Contact ID
+    kam_user_id = Column(String(50)) # Zoho User ID
+    record_module = Column(String(30)) # e.g., Accounts, Contacts
+
+    priority = Column(String(20), default="low")  
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    
+
+class CRMActionAudit(Base):
+    __tablename__ = "crm_action_audit"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    crm_response = Column(JSON, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
