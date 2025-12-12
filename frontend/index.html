@@ -121,73 +121,68 @@
       </div>
       
       <div class="analysis-content" id="analysisContent">
-        <div class="analysis-section" id="summarySection">
-          <div class="section-header">
-            <span class="section-icon">📊</span>
-            <h4>Executive Summary</h4>
-          </div>
-          <div class="typing-container" id="summaryText">
-            <!-- Typing animation content -->
-          </div>
+        <!-- Quality Incident View -->
+        <div id="qualityIncidentView" style="display: none;">
+          <!-- Quality incident specific content will be rendered here -->
         </div>
         
-        <div class="analysis-section" id="patternsSection" style="opacity: 0;">
-          <div class="section-header">
-            <span class="section-icon">🔍</span>
-            <h4>Detected Patterns</h4>
-          </div>
-          <div class="patterns-grid" id="patternsGrid">
-            <!-- Patterns injected by JS -->
-          </div>
+        <!-- Expansion Opportunity View -->
+        <div id="expansionOpportunityView" style="display: none;">
+          <!-- Expansion opportunity specific content will be rendered here -->
         </div>
         
-        <div class="analysis-section" id="scenariosSection" style="opacity: 0;">
-          <div class="section-header">
-            <span class="section-icon">🎯</span>
-            <h4>Recommended Scenarios</h4>
+        <!-- Default/Legacy View -->
+        <div id="defaultAnalysisView">
+          <div class="analysis-section" id="summarySection">
+            <div class="section-header">
+              <span class="section-icon">📊</span>
+              <h4>Executive Summary</h4>
+            </div>
+            <div class="typing-container" id="summaryText">
+              <!-- Typing animation content -->
+            </div>
           </div>
-          <div class="scenarios-list" id="scenariosList">
-            <!-- Scenarios injected by JS -->
+          
+          <div class="analysis-section" id="patternsSection" style="opacity: 0;">
+            <div class="section-header">
+              <span class="section-icon">🔍</span>
+              <h4>Detected Patterns</h4>
+            </div>
+            <div class="patterns-grid" id="patternsGrid">
+              <!-- Patterns injected by JS -->
+            </div>
+          </div>
+          
+          <div class="analysis-section" id="scenariosSection" style="opacity: 0;">
+            <div class="section-header">
+              <span class="section-icon">🎯</span>
+              <h4>Recommended Scenarios</h4>
+            </div>
+            <div class="scenarios-list" id="scenariosList">
+              <!-- Scenarios injected by JS -->
+            </div>
           </div>
         </div>
       </div>
       
       <div class="analysis-actions">
-        <button class="btn btn-primary" id="approveActionsBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Approve Actions
-        </button>
-        <button class="btn btn-secondary" id="simulateBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
-          Simulate
-        </button>
-        <button class="btn btn-ghost" id="evidenceBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-          View Evidence
-        </button>
+        <!-- Approve Actions, Simulate, and View Evidence buttons removed -->
       </div>
     </section>
 
     <!-- Right Panel: Actions -->
     <aside class="panel panel-right">
-      <div class="panel-header">
-        <h2>Pending Actions</h2>
-        <div class="panel-controls">
-          <button class="btn btn-sm btn-primary" id="approveAllBtn">Approve All</button>
-          <button class="btn btn-sm btn-ghost" id="exportBtn">Export</button>
-        </div>
-      </div>
+      <!-- Pending Actions header, Approve All and Export buttons removed -->
       <div class="actions-list" id="actionsList">
-        <!-- Actions injected by JS -->
+        <!-- Default/Legacy actions -->
+      </div>
+      
+      <div id="qualityIncidentActions" style="display: none;">
+        <!-- Quality incident specific actions -->
+      </div>
+      
+      <div id="expansionOpportunityActions" style="display: none;">
+        <!-- Expansion opportunity specific actions -->
       </div>
     </aside>
   </main>

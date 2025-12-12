@@ -182,65 +182,23 @@
             </div>
 
             <div class="analysis-actions">
-                <button class="btn btn-primary" id="approveActionsBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                    Approve Actions
-                </button>
-                <button class="btn btn-secondary" id="simulateBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                    Simulate
-                </button>
-                <button class="btn btn-ghost" id="evidenceBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                    View Evidence
-                </button>
+                <!-- Approve Actions, Simulate, and View Evidence buttons removed -->
             </div>
         </section>
 
         <!-- Right Panel: Actions & Documents -->
-        <aside class="panel panel-right">
-            <div class="panel-header">
-                <h2>AI Actions</h2>
-                <div class="panel-controls">
-                    <button class="btn btn-sm btn-primary" id="approveAllBtn">Approve All</button>
-                    <button class="btn btn-sm btn-ghost" id="exportBtn">Export</button>
-                </div>
-            </div>
+        <aside class="panel panel-right" style="overflow-y: auto; overflow-x: hidden;">
+            <!-- Added inline overflow styles directly to panel for guaranteed scrolling -->
             
-            <div class="actions-list" id="actionsList">
+            <!-- Quality Incident Actions -->
+            <div id="qualityIncidentActions" style="display: none;"></div>
+            
+            <!-- Expansion Opportunity Actions -->
+            <div id="expansionOpportunityActions" style="display: none;"></div>
+            
+            <!-- Default Actions List -->
+            <div class="actions-list" id="actionsList" style="display: none;">
                 <!-- Populated by JS -->
-            </div>
-
-            <!-- Document Viewer Section -->
-            <div class="document-section">
-                <div class="panel-header">
-                    <h2>Documents</h2>
-                </div>
-                <div class="document-viewer" id="documentViewer">
-                    <div class="document-tabs">
-                        <button class="doc-tab active" data-doc="ppt">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                            Presentation
-                        </button>
-                        <button class="doc-tab" data-doc="pdf">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            PDF Report
-                        </button>
-                    </div>
-                    <div class="document-preview" id="documentPreview">
-                        <!-- Document content -->
-                    </div>
-                    <div class="document-actions">
-                        <button class="btn btn-secondary" id="editDocBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            Edit
-                        </button>
-                        <button class="btn btn-primary" id="downloadDocBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Download
-                        </button>
-                    </div>
-                </div>
             </div>
         </aside>
     </main>

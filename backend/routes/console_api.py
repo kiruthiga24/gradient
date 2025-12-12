@@ -463,7 +463,7 @@ def get_churn_middle_pane(agent_run_id, account_id):
 
 
 
-@console.route("/agent/data/quality/<account_id>/<agent_run_id>", methods=["GET"])
+@console.route("/agent/data/quality_incident/<account_id>/<agent_run_id>", methods=["GET"])
 def get_quality_json(account_id, agent_run_id):
     """
     Build final combined JSON for UI middle + right pane.
