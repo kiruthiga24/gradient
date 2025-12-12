@@ -1,7 +1,10 @@
 # scripts/insert_expansion_rca.py
 
 import uuid
-from models.base_model import ExpansionRcaAnalysis, ExpansionBrief, ExpansionDeck, ExpansionRecommendation, ExpansionRevenueEstimate, QbrAction, QbrBrief, QbrDeck, QbrOpportunity, QbrRcaAnalysis, QbrTalkingPoints
+from models.base_model import ExpansionRcaAnalysis, ExpansionBrief, ExpansionDeck, ExpansionRecommendation, ExpansionRevenueEstimate, \
+      QbrAction, QbrBrief, QbrDeck, QbrOpportunity, QbrRcaAnalysis, QbrTalkingPoints, RcaAnalysis, ChurnBriefs, Recommendations, EmailDrafts, \
+      SupplyRca, SupplyBrief, SupplyAction, SupplyEmail
+
 
 from models.base_model import (
     QualityRcaAnalysis,
@@ -33,14 +36,95 @@ def insert_expansion_rca(db, rca, agent_run_id, account_id):
     finally:
         db.close()
 
-def insert_expansion_brief(db, brief, agent_run_id, account_id):
+def insert_churn_rca(db, rca, agent_run_id, account_id):
+    try:
+        row = RcaAnalysis(
+            rca_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            severity=rca.get("severity", ""),
+            business_impact=rca.get("business_impact", ""),
+            confidence_score=rca.get("confidence_score", 0.0),
+            root_causes=rca.get("root_causes", [])  # JSON column
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ RCA Insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ RCA Insert failed:", str(e))
+
+
+def insert_churn_brief(db, brief, agent_run_id, account_id):
+    try:
+        row = ChurnBriefs(
+            brief_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            title=brief.get("title", ""),
+            exec_summary=brief.get("exec_summary", ""),
+            key_drivers=brief.get("key_drivers", []),          # JSON list
+            recommended_focus=brief.get("recommended_focus", ""),
+            risk_level=brief.get("risk_level", "")
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ Brief Insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Brief Insert failed:", str(e))
+
+
+def insert_churn_action(db, action, agent_run_id, account_id):
+    try:
+        row = Recommendations(
+            recommendation_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            action_details=action.get("action", ""),
+            owner=action.get("owner", ""),
+            due_date=action.get("due_date", None),
+            priority=action.get("priority", "")
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ Action Insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Action Insert failed:", str(e))
+
+
+def insert_churn_email(db, email, agent_run_id, account_id):
+    try:
+        row = EmailDrafts(
+            email_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            subject=email.get("subject", ""),
+            body_text=email.get("body_text", "")
+        )
+
+        db.add(row)
+        db.commit()
+        print("✅ Email Insert successful")
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Email Insert failed:", str(e))
+
+
+def insert_expansion_brief(db, brief, agent_run_id):
     try:
         row = ExpansionBrief(
             id=uuid.uuid4(),
             agent_run_id=agent_run_id,
-            account_id=account_id,
             brief_summary=brief.get("executive_summary"),
-
             whitespace_opportunities=brief.get("detected_patterns", []),
             cross_sell_targets=[],   # not available in this LLM output
 
@@ -258,6 +342,80 @@ def insert_qbr_talking_points(db, talking_points, agent_run_id, account_id):
     finally:
         db.close()
 
+def insert_supply_rca(db, rca, agent_run_id, account_id):
+    try:
+        row = SupplyRca(
+            rca_id = uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            severity=rca.get("severity", ""),
+            confidence_score=rca.get("confidence_score", 0.0),
+            business_impact=rca.get("business_impact", ""),
+            root_causes=rca.get("root_causes", [])
+        )
+        db.add(row)
+        db.commit()
+        print("✅ RCA Insert successful")
+    except Exception as e:
+        db.rollback()
+        print("❌ RCA Insert failed:", str(e))
+
+def insert_supply_brief(db, brief, agent_run_id, account_id):
+    try:
+        row = SupplyBrief(
+            brief_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            
+            account_id=account_id,
+            situation=brief.get("situation", ""),
+            priority=brief.get("priority", ""),
+            urgency_score=brief.get("urgency_score", 0),
+            key_metrics=brief.get("key_metrics", {})
+        )
+        db.add(row)
+        db.commit()
+        print("✅ Brief Insert successful")
+    except Exception as e:
+        db.rollback()
+        print("❌ Brief Insert failed:", str(e))
+
+def insert_supply_actions(db, actions, agent_run_id, account_id):
+    try:
+        row = SupplyAction(
+            action_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            immediate_action=actions.get("immediate_actions", []),
+            follow_up_action=actions.get("followup_actions", []),
+            owner=actions.get("owners", []),
+            timeline=actions.get("timeline", ""),
+            success_criteria=actions.get("success_criteria", [])
+        )
+        db.add(row)
+        db.commit()
+        print("✅ Actions Insert successful")   
+    except Exception as e:
+        db.rollback()
+        print("❌ Actions Insert failed:", str(e))
+
+def insert_supply_email(db, email, agent_run_id, account_id):
+    try:
+        row = SupplyEmail(
+            email_id=uuid.uuid4(),
+            agent_run_id=agent_run_id,
+            account_id=account_id,
+            subject=email.get("subject", ""),
+            body_text=email.get("body", ""),
+            priority=email.get("priority", ""),
+            recipients=email.get("recipients", []),
+            cc=email.get("cc", [])
+        )
+        db.add(row)
+        db.commit()
+        print("✅ Email Insert successful")
+    except Exception as e:
+        db.rollback()
+        print("❌ Email Insert failed:", str(e))
 
 def insert_quality_rca(db, rca, agent_run_id, account_id):
     try:
@@ -367,4 +525,17 @@ def save_quality_output(db, payload, agent_run_id):
     insert_quality_brief(db, payload["brief"], agent_run_id, payload["account_id"])
     insert_quality_actions(db, payload["actions"], agent_run_id, payload["account_id"])
     insert_quality_email(db, payload["email"], agent_run_id, payload["account_id"])
+
+def save_churn_output(db, payload, agent_run_id, account_id):
+    insert_churn_rca(db, payload["rca"], agent_run_id, account_id)
+    insert_churn_brief(db, payload["brief"], agent_run_id,account_id )
+    insert_churn_action(db, payload["actions"], agent_run_id, account_id)
+    insert_churn_email(db, payload["email"], agent_run_id, account_id)
+
+def save_supply_output(db, payload, agent_run_id, account_id):
+    insert_supply_rca(db, payload["rca"], agent_run_id,account_id )
+    insert_supply_brief(db, payload["brief"], agent_run_id, account_id)
+    insert_supply_actions(db, payload["actions"], agent_run_id, account_id)
+    insert_supply_email(db, payload["email"], agent_run_id, account_id)
+    
 

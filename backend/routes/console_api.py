@@ -6,6 +6,16 @@ from llm.orchestrator import LLMOrchestrator
 import json
 from datetime import datetime, timezone
 
+from decimal import Decimal
+
+def to_json_safe(obj):
+    if isinstance(obj, dict):
+        return {k: to_json_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_json_safe(v) for v in obj]
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    return obj
 
 from services.signal_detector.runner import run_all_detectors
 
@@ -64,6 +74,59 @@ def run_signals():
 
     except Exception as e:
         logger.error(f"Signal detection failed: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+    finally:
+        db.close()
+
+@console.route("/run/churn-risk", methods=["POST"])
+def run_churn():
+    db = SessionLocal()
+
+    try:
+        logger.info("Expansion LLM started successfully")
+
+        row = db.query(LLMSignalPayloads) \
+        .filter(LLMSignalPayloads.use_case_name == "churn_risk") \
+        .order_by(LLMSignalPayloads.created_at.desc()) \
+        .limit(1) \
+        .first()
+
+
+        if not row:
+            return jsonify({"error": "No Churn payload found"}), 404
+        
+
+        print("*********")
+        print("Row", row)
+
+        payload_id = row.payload_id
+        score = row.final_score
+        agent_run_id = row.agent_run_id
+        print(agent_run_id)
+        payload_json = row.payload_json
+        payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+        payload = to_json_safe(payload_raw)
+        payload["payload_id"] = str(payload_id)
+        payload["final_score"] = float(score) if isinstance(score, Decimal) else score
+        print("Payload", payload)
+
+        # Call orchestrator
+        result = llm.run_pipeline(
+            db,
+            use_case="churn_risk",
+            payload=payload,
+            agent_run_id=agent_run_id
+        )
+
+        return jsonify({
+            "payload_id": str(payload_id),
+            "status": "processed",
+            "llm_output": result
+        })
+
+    except Exception as e:
+        logger.error(f"Churn Run failed: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
@@ -193,26 +256,42 @@ def run_quality_inc():
 
         if not row:
             return jsonify({"error": "No qbr payload found"}), 404
+    except Exception as e:
+        logger.error(f"Signal detection failed: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
         
 
+@console.route("/run/supply-risk", methods=["POST"])
+def run_supply_risk():
+    db = SessionLocal()
+    try:
+        row = db.query(LLMSignalPayloads) \
+        .filter(LLMSignalPayloads.use_case_name == "supply_risk") \
+        .order_by(LLMSignalPayloads.created_at.desc()) \
+        .limit(1) \
+        .first()
+        if not row:
+            return jsonify({"message": "No supply risk records"}), 404
+        
         print("*********")
         print("Row", row)
 
         payload_id = row.payload_id
         score = row.final_score
         agent_run_id = row.agent_run_id
-        print(agent_run_id)
         payload_json = row.payload_json
         payload = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
         payload["payload_id"] = str(payload_id)
         payload["final_score"] = score
-
+        payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+        payload = to_json_safe(payload_raw)
+               
         print("Payload", payload)
 
         # Call orchestrator
         result = llm.run_pipeline(
             db,
-            use_case="quality_incident",
+            use_case="supply_risk",
             payload=payload,
             agent_run_id=agent_run_id
         )
@@ -225,6 +304,7 @@ def run_quality_inc():
 
     except Exception as e:
         logger.error(f"Signal detection failed: {str(e)}")
+        logger.error(f"Churn Run failed: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
