@@ -1,7 +1,9 @@
 from flask import Blueprint, jsonify
 from database import SessionLocal
 from utils.logger import logger
-from models.base_model import LLMSignalPayloads, QualityAction, QualityBrief, QualityEmail, QualityRcaAnalysis
+from models.base_model import LLMSignalPayloads, RcaAnalysis, ChurnBriefs, QualityAction, QualityBrief, QualityEmail, QualityRcaAnalysis,\
+    Recommendations, EmailDrafts, SupplyRca, SupplyBrief, SupplyAction, SupplyEmail, QbrAction, QbrDeck, QbrRcaAnalysis, QbrTalkingPoints, \
+    QbrOpportunity, QbrBrief
 from llm.orchestrator import LLMOrchestrator
 import json
 from datetime import datetime, timezone
@@ -210,11 +212,12 @@ def run_qbr():
         payload_id = row.payload_id
         score = row.final_score
         agent_run_id = row.agent_run_id
-        print(agent_run_id)
         payload_json = row.payload_json
         payload = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
         payload["payload_id"] = str(payload_id)
         payload["final_score"] = score
+        payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+        payload = to_json_safe(payload_raw)
 
         print("Payload", payload)
 
@@ -358,8 +361,105 @@ def get_left_pane_by_use_case(use_case):
             "detected_ago": time_ago(row.created_at),
             "created_at": row.created_at.isoformat()
         })
-
     return jsonify({"data": response})
+
+@console.route("/churn-risk/middle_pane/<agent_run_id>/<account_id>", methods=["GET"])
+def get_churn_middle_pane(agent_run_id, account_id):
+
+    # FETCH RCA
+    # -------------------------------
+    db  = SessionLocal()    
+    rca_row = (db.query(RcaAnalysis). \
+                filter( RcaAnalysis.agent_run_id == agent_run_id,
+                        RcaAnalysis.account_id == account_id)). \
+                order_by(RcaAnalysis.created_at.desc()).\
+                first()
+
+    if not rca_row:
+        raise Exception("No RCA found")
+    # -------------------------------
+    # FETCH BRIEF
+    # -------------------------------
+    brief_row = (db.query(ChurnBriefs). \
+                filter( ChurnBriefs.agent_run_id == agent_run_id,
+                        ChurnBriefs.account_id == account_id)). \
+                order_by(ChurnBriefs.created_at.desc()). \
+                first()
+    if not brief_row:
+        raise Exception("No Brief found")
+    # -------------------------------
+    # FETCH ACTIONS
+    # -------------------------------
+
+    actions_raw = (
+            db.query(Recommendations)
+            .filter(
+                Recommendations.agent_run_id == agent_run_id,
+                Recommendations.account_id == account_id
+            )
+            .order_by(Recommendations.created_at.desc())
+            .all()
+        )
+    if not actions_raw:
+        raise Exception("No Actions found")  
+     # ------------------------------------------
+        # FETCH EMAIL (Right Pane)
+        # ------------------------------------------
+    email_raw = (
+            db.query(EmailDrafts)
+            .filter(
+                EmailDrafts.agent_run_id == agent_run_id,
+                EmailDrafts.account_id == account_id
+            )
+            .order_by(EmailDrafts.created_at.desc())
+            .first()
+        )
+
+    # Build UI JSON response
+    response = {
+            "risk_summary": {
+            "primary_driver": rca_row.root_causes[0].get("cause") if rca_row.root_causes else "",
+            "risk_level": rca_row.severity,
+            "estimated_impact": rca_row.business_impact,
+            "confidence_score": rca_row.confidence_score,
+            "executive_summary": brief_row.exec_summary
+            },
+
+            "detected_root_causes": [
+            {
+                "title": f"Root Cause {idx + 1}",
+                "cause": rc.get("cause", ""),
+                "confidence": rc.get("confidence", "")
+            }
+            for idx, rc in enumerate(rca_row.root_causes)
+             ],
+
+            "commercial_brief": {
+            "title": brief_row.title,
+            "executive_summary": brief_row.exec_summary,
+            "key_drivers": brief_row.key_drivers,
+            "recommended_focus": brief_row.recommended_focus
+            },
+
+            "actions": [
+            {
+                        "action": a.action_details,
+                        "owner": a.owner,
+                        "due_date": a.due_date,
+                        "priority": a.priority
+            }
+            for a in actions_raw
+            ],
+            
+        "email_draft": {
+                    "subject": email_raw.subject if email_raw else "",
+                    "body_text": email_raw.body_text if email_raw else ""
+                }
+            }
+    
+    db.close()
+    return response
+
 
 
 
@@ -459,5 +559,182 @@ def get_quality_json(account_id, agent_run_id):
             "to_address": email.to_address if email else None,
         }
     }
+    db.close()
 
     return jsonify({"data": final_json})
+
+@console.route("/supply_risk/ui/<agent_run_id>/<account_id>", methods=["GET"])
+def get_supply_ui_json(agent_run_id, account_id):
+
+    db= SessionLocal()
+
+    # 1️⃣ Fetch RCA
+    rca_raw = (db.query(SupplyRca). \
+                filter( SupplyRca.agent_run_id == agent_run_id,
+                        SupplyRca.account_id == account_id). \
+                order_by(SupplyRca.created_at.desc()).\
+                first())
+
+
+    # 2️⃣ Fetch Brief
+    brief_raw = (db.query(SupplyBrief). \
+            filter(SupplyBrief.agent_run_id==agent_run_id,
+                    SupplyBrief.account_id==account_id). \
+            order_by(SupplyBrief.created_at.desc()). \
+            first())
+
+    # 3️⃣ Fetch Actions
+    actions_raw = (db.query(SupplyAction). \
+                filter(SupplyAction.agent_run_id==agent_run_id,
+                           SupplyAction.account_id==account_id). \
+                order_by(SupplyAction.created_at.desc()). \
+                all())
+
+    # 4️⃣ Fetch Email
+    email_raw= (db.query(SupplyEmail). \
+            filter(SupplyEmail.agent_run_id==agent_run_id, 
+                   SupplyEmail.account_id==account_id). \
+            order_by(SupplyEmail.created_at.desc()). \
+            first())
+    
+    actions_list = []
+    for a in actions_raw:
+        # Immediate Actions
+        if a.immediate_action:
+            for act in a.immediate_action:
+                actions_list.append({
+                    "action": act.get("action", ""),
+                    "owner": act.get("owner", ""),
+                    "due_date": act.get("due", None),
+                    "priority": act.get("priority", "Medium")
+                })
+        # Follow-up Actions
+        if a.follow_up_action:
+            for act in a.follow_up_action:
+                actions_list.append({
+                    "action": act.get("action", ""),
+                    "owner": act.get("owner", ""),
+                    "due_date": act.get("due", None),
+                    "priority": act.get("priority", "Medium")
+                })
+
+    result = {
+            "risk_summary": {
+                "primary_driver": rca_raw.root_causes[0]["cause"] if rca_raw and rca_raw.root_causes else "",
+                "risk_level": rca_raw.severity if rca_raw else "",
+                "estimated_impact": rca_raw.business_impact if rca_raw else "",
+                "confidence_score": float(rca_raw.confidence_score) if rca_raw and rca_raw.confidence_score else 0.0,
+                "executive_summary": brief_raw.situation if brief_raw else ""
+            },
+            "detected_root_causes": [
+                {
+                    "cause": cause.get("cause", "N/A"),
+                    "confidence": float(cause.get("confidence", 0.0))
+                }
+                for cause in rca_raw.root_causes
+            ] if rca_raw and rca_raw.root_causes else [],
+            "commercial_brief": {
+                "title": "Supply Risk Brief",
+                "executive_summary": brief_raw.situation if brief_raw and brief_raw.situation else "N/A",
+                "key_drivers": [
+                    brief_raw.key_metrics.get("primary_risk", "")
+                ] if brief_raw and brief_raw.key_metrics else [],
+                "recommended_focus": brief_raw.key_metrics.get("revenue_impact", "") if brief_raw and brief_raw.key_metrics else ""
+        },
+        
+            "actions": actions_list,
+            "email": {
+                "subject": email_raw.subject if email_raw and email_raw.subject else "",
+                "body_text": email_raw.body_text if email_raw and email_raw.body_text else ""
+        }
+    
+    }
+    db.close()
+    return jsonify(result)
+
+@console.route("/qbr/ui/<account_id>", methods=["GET"])
+@console.route("/qbr/ui/<account_id>/<agent_run_id>", methods=["GET"])
+def get_qbr_ui_json(account_id, agent_run_id=None):
+    db = SessionLocal()
+
+    try:
+        # 1️⃣ Determine latest agent_run_id if not provided
+       
+        rca = (
+            db.query(QbrRcaAnalysis)
+            .filter(QbrRcaAnalysis.account_id == account_id, QbrRcaAnalysis.agent_run_id == agent_run_id)
+            .first()
+        )
+
+        brief = (
+            db.query(QbrBrief)
+            .filter(QbrBrief.account_id == account_id, QbrBrief.agent_run_id == agent_run_id)
+            .first()
+        )
+
+        opportunities = (
+            db.query(QbrOpportunity)
+            .filter(QbrOpportunity.account_id == account_id, QbrOpportunity.agent_run_id == agent_run_id)
+            .all()
+        )
+
+        actions = (
+            db.query(QbrAction)
+            .filter(QbrAction.account_id == account_id, QbrAction.agent_run_id == agent_run_id)
+            .all()
+        )
+
+        deck = (
+            db.query(QbrDeck)
+            .filter(QbrDeck.account_id == account_id, QbrDeck.agent_run_id == agent_run_id)
+            .first()
+        )
+
+        talking_points = (
+            db.query(QbrTalkingPoints)
+            .filter(QbrTalkingPoints.account_id == account_id, QbrTalkingPoints.agent_run_id == agent_run_id)
+            .first()
+        )
+
+        # 3️⃣ Build final JSON
+        ui_json = {
+            
+                "trends": rca.trends if rca and rca.trends else {"orders": 0, "usage": 0, "quality": 0, "tickets": 0},
+                "root_causes": rca.root_causes if rca and rca.root_causes else [],
+                "signals": rca.signals if rca and rca.signals else {"wins": [], "risks": [], "opportunities": []},
+                "brief": {
+                    "executive_summary": brief.executive_summary if brief else "",
+                    "key_wins": brief.key_wins if brief and brief.key_wins else [],
+                    "key_risks": brief.key_risks if brief and brief.key_risks else [],
+                    "opportunities_summary": brief.opportunities_summary if brief and brief.opportunities_summary else []
+                },
+                "opportunities": [
+                    {
+                        "type": o.type or "",
+                        "sku": o.sku or "",
+                        "rationale": o.rationale or "",
+                        "estimated_value": float(o.estimated_value) if o.estimated_value is not None else 0
+                    } for o in opportunities
+                ],
+                "actions": [
+                    {
+                        "title": a.title or "",
+                        "description": a.description or "",
+                        "priority": a.priority or "",
+                        "type": a.type or "",
+                        "assignee_suggestion": a.assignee_suggestion or ""
+                    } for a in actions
+                ],
+                "deck": {
+                    "deck_title": deck.deck_title if deck else "",
+                    "slides": deck.slides if deck and deck.slides else []
+                },
+                "talking_points": talking_points.talking_points if talking_points and talking_points.talking_points else []
+            }
+        
+
+        return jsonify(ui_json)
+
+    finally:
+        db.close()
+

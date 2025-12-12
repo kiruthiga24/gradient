@@ -230,13 +230,11 @@ class ChurnBriefs(BaseModel, Base):
     brief_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     account_id = Column(UUID(as_uuid=True), nullable=False)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    title = Column(String(50))
+    title = Column(Text)
     risk_level = Column(String(50))
-    recommended_focus = Column(String(100))
+    recommended_focus = Column(Text)
     key_drivers = Column(JSONB)
-    # signal_id = Column(UUID(as_uuid=True))
-    # account_id = Column(UUID(as_uuid=True))
-    exec_summary = Column(String(225))
+    exec_summary = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())  
 
@@ -418,7 +416,6 @@ class QbrBrief(Base):
 
 class QbrOpportunity(Base):
     __tablename__ = "qbr_opportunities"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
     account_id = Column(UUID(as_uuid=True), nullable=False)
