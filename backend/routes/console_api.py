@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 from database import SessionLocal
 from utils.logger import logger
-from models.base_model import LLMSignalPayloads, QualityAction, QualityBrief, QualityEmail, QualityRcaAnalysis
+from models.base_model import LLMSignalPayloads, QualityAction, QualityBrief, QualityEmail, QualityRcaAnalysis, ExpansionBrief, ExpansionDeck, ExpansionRcaAnalysis, ExpansionRecommendation, ExpansionRevenueEstimate
 from llm.orchestrator import LLMOrchestrator
 import json
 from datetime import datetime, timezone
@@ -359,11 +359,12 @@ def get_left_pane_by_use_case(use_case):
             "created_at": row.created_at.isoformat()
         })
 
+    db.close()
     return jsonify({"data": response})
 
 
 
-@console.route("/agent/data/quality/<account_id>/<agent_run_id>", methods=["GET"])
+@console.route("/agent/data/quality_incident/<account_id>/<agent_run_id>", methods=["GET"])
 def get_quality_json(account_id, agent_run_id):
     """
     Build final combined JSON for UI middle + right pane.
@@ -459,5 +460,111 @@ def get_quality_json(account_id, agent_run_id):
             "to_address": email.to_address if email else None,
         }
     }
+    db.close()
 
     return jsonify({"data": final_json})
+
+@console.route("/agent/data/expansion_opportunity/<account_id>/<agent_run_id>", methods=["GET"])
+def get_expansion_json(account_id, agent_run_id):
+    session = SessionLocal()
+    # 2. Fetch all tables for this run
+    rca = (
+        session.query(ExpansionRcaAnalysis)
+        .filter_by(account_id=account_id, agent_run_id=agent_run_id)
+        .first()
+    )
+
+    brief = (
+        session.query(ExpansionBrief)
+        .filter_by(account_id=account_id, agent_run_id=agent_run_id)
+        .first()
+    )
+
+    revenue = (
+        session.query(ExpansionRevenueEstimate)
+        .filter_by(account_id=account_id, agent_run_id=agent_run_id)
+        .first()
+    )
+
+    actions = (
+        session.query(ExpansionRecommendation)
+        .filter_by(account_id=account_id, agent_run_id=agent_run_id)
+        .order_by(ExpansionRecommendation.priority)
+        .all()
+    )
+
+    deck = (
+        session.query(ExpansionDeck)
+        .filter_by(account_id=account_id, agent_run_id=agent_run_id)
+        .first()
+    )
+
+    # 3. Derive "primary signal", "competitor risk", etc
+    primary_signal = None
+    competitor_risk = None
+    estimated_upside = None
+    signal_confidence = None
+
+    if rca and rca.usage_anomalies:
+        top = rca.usage_anomalies[0]
+        primary_signal = top.get("pattern", "")
+        signal_confidence = top.get("confidence", 0)
+
+    if rca and rca.competitor_dependency:
+        c = rca.competitor_dependency[0]
+        competitor_risk = f"Dependency on {c.get('their_sku', '')}"
+
+    if revenue:
+        estimated_upside = float(revenue.estimated_monthly_revenue)
+
+    # 4. Build UI JSON
+    ui_json = {
+        "middle_panel": {
+            "executive_summary": brief.brief_summary if brief else "",
+            "primary_signal": primary_signal,
+            "competitor_risk": competitor_risk,
+            "estimated_upside": estimated_upside,
+            "signal_confidence": signal_confidence,
+
+            "detected_signals": {
+                "usage_anomalies": rca.usage_anomalies if rca else [],
+                "competitor_dependency": rca.competitor_dependency if rca else [],
+                "bom_gaps": rca.bom_gaps if rca else []
+            },
+
+            "commercial_intelligence": {
+                "brief_summary": brief.brief_summary if brief else "",
+                "commercial_insight": brief.whitespace_opportunities if brief else "",
+                "detected_patterns": brief.cross_sell_targets if brief else []
+            },
+
+            "revenue_opportunity": {
+                "currency": revenue.currency if revenue else "",
+                "estimated_monthly_revenue": float(revenue.estimated_monthly_revenue) if revenue else None,
+                "estimated_annual_revenue": float(revenue.estimated_annual_revenue) if revenue else None,
+                "assumptions": revenue.assumptions if revenue else [],
+                "revenue_model":[]  # if you want table view, fill from RCA or transformed data
+            }
+        },
+
+        "right_panel": {
+            "actions": [
+                {
+                    "priority": a.priority,
+                    "type": a.recommendation_type,
+                    "target_sku": a.target_sku,
+                    "rationale": a.rationale,
+                    "expected_lift": float(a.expected_lift) if a.expected_lift else None
+                }
+                for a in actions
+            ],
+            "deck": {
+                "deck_title": deck.deck_title if deck else "",
+                "slides": deck.deck_outline if deck else []
+            }
+        }
+    }
+
+    session.close()
+
+    return jsonify({"data": ui_json})

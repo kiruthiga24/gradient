@@ -1052,17 +1052,27 @@ const agentNames = {
 // ========================================
 
 const useCaseToAPIParam = {
+  // Short names from navigation/state
   churn: "churn_risk",
   expansion: "expansion_opportunity",
   qbr: "qbr_auto_generation",
   supply: "supply_risk",
   quality: "quality_incident",
+
+  // Full API names from data (handle direct mapping)
+  churn_risk: "churn_risk",
+  expansion_opportunity: "expansion_opportunity",
+  qbr_auto_generation: "qbr_auto_generation",
+  supply_risk: "supply_risk",
+  quality_incident: "quality_incident",
 }
 
 const API_CONFIG = {
   baseUrl: "http://localhost:5000",
   endpoints: {
     getSignals: (useCase) => `/signals/left-pane/${useCaseToAPIParam[useCase] || "churn_risk"}`,
+    getAgentData: (useCase, accountId, agentRunId) =>
+      `/agent/data/${useCaseToAPIParam[useCase] || "quality_incident"}/${accountId}/${agentRunId}`,
   },
 }
 
@@ -1099,6 +1109,11 @@ const elements = {
   scenariosSection: document.getElementById("scenariosSection"),
   scenariosList: document.getElementById("scenariosList"),
   actionsList: document.getElementById("actionsList"),
+  qualityIncidentView: document.getElementById("qualityIncidentView"),
+  expansionOpportunityView: document.getElementById("expansionOpportunityView"),
+  defaultAnalysisView: document.getElementById("defaultAnalysisView"),
+  qualityIncidentActions: document.getElementById("qualityIncidentActions"),
+  expansionOpportunityActions: document.getElementById("expansionOpportunityActions"),
   modalOverlay: document.getElementById("modalOverlay"),
   toastContainer: document.getElementById("toastContainer"),
   themeToggle: document.getElementById("themeToggle"),
@@ -1109,7 +1124,7 @@ const elements = {
   approveActionsBtn: document.getElementById("approveActionsBtn"),
   simulateBtn: document.getElementById("simulateBtn"),
   evidenceBtn: document.getElementById("evidenceBtn"),
-  approveAllBtn: document.getElementById("approveAllBtn"),
+  approveAllBtn: document.getElementById("exportBtn"), // Corrected ID based on previous code
   exportBtn: document.getElementById("exportBtn"),
   thresholdInput: document.getElementById("thresholdInput"),
   thresholdValue: document.getElementById("thresholdValue"),
@@ -1170,6 +1185,86 @@ async function loadAlertsFromAPI(useCase = "churn") {
   }
 }
 
+async function fetchAgentData(accountId, agentRunId, useCase) {
+  // Adjusted parameter order to match API_CONFIG.endpoints.getAgentData
+  try {
+    const endpoint = API_CONFIG.endpoints.getAgentData(useCase, accountId, agentRunId)
+    const url = `${API_CONFIG.baseUrl}${endpoint}`
+
+    console.log(`[v0] Fetching agent data from: ${url}`)
+
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] Agent data received:`, data)
+
+    if (data.error) {
+      console.warn(`[v0] API returned error: ${data.error}`)
+      return null
+    }
+
+    return data.data || data
+  } catch (error) {
+    console.error("[v0] Error fetching agent data:", error)
+
+    if (error.message.includes("Failed to fetch") || error.message.includes("CORS")) {
+      console.error("[v0] CORS Error - Make sure Flask has CORS enabled")
+      showToast("Unable to fetch agent details. Check CORS configuration.", "error")
+    } else {
+      showToast("Failed to load agent details", "error")
+    }
+
+    return null
+  }
+}
+
+// Modified loadAgentDataFromAPI to use the new fetchAgentData function
+async function loadAgentDataFromAPI(alert) {
+  try {
+    const { useCase, id: accountId, agentRunId } = alert
+    if (!agentRunId) {
+      console.log(`[v0] No agentRunId for alert ${accountId}, using cached data.`)
+      return {
+        analysis: alert.analysis,
+        actions: alert.actions,
+      }
+    }
+    // Pass useCase to fetchAgentData
+    const fetchedData = await fetchAgentData(accountId, agentRunId, useCase)
+
+    if (fetchedData) {
+      return {
+        analysis: fetchedData.analysis || alert.analysis, // Fallback to cached if API misses fields
+        actions: fetchedData.actions || alert.actions, // Fallback to cached if API misses fields
+        // Include other relevant data from fetchedData if needed for quality incident view
+        qualityIncidentData: fetchedData.qualityIncidentData || null,
+        // Include other relevant data from fetchedData if needed for expansion opportunity view
+        middle_panel: fetchedData.middle_panel || null,
+        right_panel: fetchedData.right_panel || null,
+        brief: fetchedData.brief || null, // Add brief for quality incident view
+      }
+    } else {
+      // If fetching failed, return cached data
+      return {
+        analysis: alert.analysis,
+        actions: alert.actions,
+      }
+    }
+  } catch (error) {
+    console.error(`[v0] Error processing agent data for alert ${alert.id}:`, error)
+    // Fallback to using the existing alert data if any error occurs
+    showToast("warning", "Failed to load agent data", "Using cached data for analysis.")
+    return {
+      analysis: alert.analysis,
+      actions: alert.actions,
+    }
+  }
+}
+
 function transformAPIData(apiData) {
   // Handle your Flask API response structure
   return apiData.map((item) => ({
@@ -1180,12 +1275,16 @@ function transformAPIData(apiData) {
     score: Number.parseFloat(item.final_score) * 100 || 50, // Convert "0.33" to 33
     metrics: Array.isArray(item.indicators) ? item.indicators : [], // Store indicators array
     timestamp: item.detected_ago || "just now",
+    agentRunId: item.agent_run_id || null, // Store agent run ID for API calls
+    useCase: item.use_case || "churn_risk", // Store use case for API calls
     analysis: item.analysis || {
       summary: `${item.account_name} showing ${item.risk_level} risk signals`,
       patterns: item.indicators || [],
       scenarios: [],
     },
     actions: item.actions || [],
+    // Add a placeholder for detailed data that will be fetched
+    detailedData: null,
   }))
 }
 
@@ -1287,6 +1386,48 @@ function setupEventListeners() {
       updatePreview()
     })
   })
+
+  // Add click listeners for alert cards
+  // This part will be dynamically re-attached after rendering, so it's fine here for setup
+  document.querySelectorAll(".alert-card").forEach((card) => {
+    attachAlertCardListeners(card)
+  })
+}
+
+// Helper function to attach listeners to a single alert card
+function attachAlertCardListeners(card) {
+  card.addEventListener("click", async () => {
+    const alertId = card.dataset.id
+    const alert = (state.currentAlerts || alertsData[state.currentUseCase]).find((a) => a.id === alertId)
+    if (alert) {
+      // Fetch detailed data if available and not already loaded
+      if (alert.agentRunId && alert.useCase && !alert.detailedData) {
+        const agentData = await fetchAgentData(alert.id, alert.agentRunId, alert.useCase)
+        if (agentData) {
+          alert.detailedData = agentData // Store fetched data
+          console.log("[v0] Detailed agent data loaded for:", alert.company)
+        }
+      }
+      selectAlert(alert)
+    }
+  })
+  card.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      const alertId = card.dataset.id
+      const alert = (state.currentAlerts || alertsData[state.currentUseCase]).find((a) => a.id === alertId)
+      if (alert) {
+        if (alert.agentRunId && alert.useCase && !alert.detailedData) {
+          const agentData = await fetchAgentData(alert.id, alert.agentRunId, alert.useCase)
+          if (agentData) {
+            alert.detailedData = agentData
+            console.log("[v0] Detailed agent data loaded for:", alert.company)
+          }
+        }
+        selectAlert(alert)
+      }
+    }
+  })
 }
 
 // ========================================
@@ -1308,6 +1449,8 @@ async function switchUseCase(useCase) {
   // Update agent name
   elements.agentName.textContent = agentNames[useCase]
 
+  clearAnalysisPanels()
+
   const apiAlerts = await loadAlertsFromAPI(useCase)
 
   if (apiAlerts && apiAlerts.length > 0) {
@@ -1319,18 +1462,24 @@ async function switchUseCase(useCase) {
     console.log(`[v0] Using mock data for ${useCase}`)
   }
 
-  // Render new alerts
   renderAlerts()
+}
 
-  // Select first alert
-  if (state.currentAlerts && state.currentAlerts.length > 0) {
-    selectAlert(state.currentAlerts[0])
-  } else {
-    // Clear analysis panel if no alerts
-    elements.summaryText.innerHTML = "No alerts available"
-    elements.patternsGrid.innerHTML = ""
-    elements.scenariosList.innerHTML = ""
-  }
+function clearAnalysisPanels() {
+  // Hide all specific views and show default
+  elements.qualityIncidentView.style.display = "none"
+  elements.expansionOpportunityView.style.display = "none"
+  elements.defaultAnalysisView.style.display = "block"
+
+  // Clear content of the default analysis view
+  elements.defaultAnalysisView.innerHTML =
+    '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Select an account to view details</div>'
+
+  // Clear content of default actions list and hide specific action containers
+  elements.actionsList.innerHTML =
+    '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+  elements.qualityIncidentActions.style.display = "none"
+  elements.expansionOpportunityActions.style.display = "none"
 }
 
 // ========================================
@@ -1371,23 +1520,13 @@ function renderAlerts() {
     )
     .join("")
 
-  // Add click listeners
+  // Add listeners to newly rendered cards
   document.querySelectorAll(".alert-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      const alertId = card.dataset.id
-      // Try to find alert in fetched data first, then fallback to mock data
-      const alert = (state.currentAlerts || alertsData[state.currentUseCase]).find((a) => a.id === alertId)
-      if (alert) selectAlert(alert)
-    })
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault()
-        const alertId = card.dataset.id
-        // Try to find alert in fetched data first, then fallback to mock data
-        const alert = (state.currentAlerts || alertsData[state.currentUseCase]).find((a) => a.id === alertId)
-        if (alert) selectAlert(alert)
-      }
-    })
+    // Avoid re-attaching listeners if they already exist
+    if (!card.dataset.listenerAttached) {
+      attachAlertCardListeners(card)
+      card.dataset.listenerAttached = "true"
+    }
   })
 }
 
@@ -1395,21 +1534,397 @@ function renderAlerts() {
 // Alert Selection & Analysis
 // ========================================
 
-function selectAlert(alert) {
-  state.selectedAlert = alert
-  state.approvedActions.clear()
-  state.editedActions.clear()
+function selectAlert(alertData) {
+  state.selectedAlert = alertData
 
-  // Update active state
+  // Remove active class from all cards
   document.querySelectorAll(".alert-card").forEach((card) => {
-    card.classList.toggle("active", card.dataset.id === alert.id)
+    card.classList.remove("active")
   })
 
-  // Start typing animation
-  startTypingAnimation(alert)
+  // Add active class to the selected card
+  const selectedCard = document.querySelector(`.alert-card[data-id="${alertData.id}"]`)
+  if (selectedCard) {
+    selectedCard.classList.add("active")
+  }
 
-  // Render actions
-  renderActions(alert.actions)
+  // Fetch detailed agent data if needed
+  if (alertData.agentRunId && alertData.useCase) {
+    fetchAgentData(alertData.id, alertData.agentRunId, alertData.useCase)
+      .then((agentData) => {
+        if (agentData) {
+          alertData.detailedData = agentData // Store fetched data
+          console.log("[v0] Detailed agent data loaded for:", alertData.company)
+        } else {
+          console.warn("[v0] Failed to fetch agent data, using cached or default data.")
+        }
+        renderSpecificView(alertData) // Render the appropriate view after data fetch
+      })
+      .catch((error) => {
+        console.error("[v0] Error during fetchAgentData in selectAlert:", error)
+        renderSpecificView(alertData) // Attempt to render with potentially partial data
+      })
+  } else {
+    renderSpecificView(alertData) // Render if no agentRunId or useCase
+  }
+}
+
+function renderSpecificView(alertData) {
+  const { useCase, detailedData } = alertData
+
+  console.log("[v0] renderSpecificView called with useCase:", useCase)
+  console.log("[v0] detailedData:", detailedData)
+  console.log("[v0] detailedData?.middle_panel:", detailedData?.middle_panel)
+  console.log("[v0] detailedData?.brief:", detailedData?.brief)
+
+  // Get references to view containers
+  const qualityViewContainer = elements.qualityIncidentView
+  const expansionViewContainer = elements.expansionOpportunityView
+
+  const defaultViewContainer = elements.defaultAnalysisView
+
+  const qualityActionsContainer = elements.qualityIncidentActions
+  const expansionActionsContainer = elements.expansionOpportunityActions
+  const defaultActionsContainer = elements.actionsList
+
+  console.log("[v0] qualityViewContainer:", qualityViewContainer)
+  console.log("[v0] expansionViewContainer:", expansionViewContainer)
+  console.log("[v0] defaultViewContainer:", defaultViewContainer)
+
+  // Hide all specific views and actions first
+  qualityViewContainer.style.display = "none"
+  expansionViewContainer.style.display = "none"
+  defaultViewContainer.style.display = "block"
+  qualityActionsContainer.style.display = "none"
+  expansionActionsContainer.style.display = "none"
+  defaultActionsContainer.style.display = "block"
+
+  // Reset default view content
+  defaultViewContainer.innerHTML =
+    '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Select an account to view details</div>'
+  defaultActionsContainer.innerHTML =
+    '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+
+  if (useCase === "quality_incident" && detailedData?.brief) {
+    console.log("[v0] Rendering quality incident view")
+    qualityViewContainer.style.display = "block"
+    defaultViewContainer.style.display = "none"
+    qualityActionsContainer.style.display = "block"
+    defaultActionsContainer.style.display = "none"
+    renderQualityIncidentView(detailedData, qualityViewContainer)
+    renderQualityIncidentActions(detailedData, qualityActionsContainer)
+  } else if (useCase === "expansion_opportunity" && detailedData?.middle_panel) {
+    console.log("[v0] Rendering expansion opportunity view")
+    expansionViewContainer.style.display = "block"
+    defaultViewContainer.style.display = "none"
+    expansionActionsContainer.style.display = "block"
+    defaultActionsContainer.style.display = "none"
+    renderExpansionOpportunityView(detailedData.middle_panel, expansionViewContainer)
+    renderExpansionActions(detailedData.right_panel, expansionActionsContainer)
+  } else if (alertData.analysis) {
+    // Fallback to the default detailed analysis view
+    console.log("[v0] Rendering default analysis view")
+    renderAnalysis(alertData.analysis)
+    renderActions(alertData.actions)
+  } else {
+    console.log("[v0] No detailed data available, showing default empty view.")
+    clearAnalysisPanels() // Ensure panels are reset if no data at all
+  }
+}
+
+function renderAnalysis(analysis) {
+  // Cancel any existing animation
+  if (state.typingAnimationId) {
+    clearTimeout(state.typingAnimationId)
+    state.typingAnimationId = null
+  }
+  if (state.typingTimeoutId) {
+    clearTimeout(state.typingTimeoutId)
+    state.typingTimeoutId = null
+  }
+
+  // Reset sections with proper transitions
+  elements.summaryText.innerHTML = ""
+  elements.patternsSection.style.opacity = "0"
+  elements.patternsSection.style.transform = "translateY(10px)"
+  elements.scenariosSection.style.opacity = "0"
+  elements.scenariosSection.style.transform = "translateY(10px)"
+  elements.patternsGrid.innerHTML = ""
+  elements.scenariosList.innerHTML = ""
+
+  // Add transition styles
+  elements.patternsSection.style.transition = "opacity 0.4s ease, transform 0.4s ease"
+  elements.scenariosSection.style.transition = "opacity 0.4s ease, transform 0.4s ease"
+
+  // Store current alert ID to prevent stale callbacks
+  const currentAlertId = state.selectedAlert?.id
+
+  // Type summary with controlled animation
+  typeText(analysis.summary, elements.summaryText, 12, () => {
+    // Verify we're still on the same alert
+    if (state.selectedAlert?.id !== currentAlertId) return
+
+    // Show patterns after summary
+    state.typingAnimationId = setTimeout(() => {
+      if (state.selectedAlert?.id !== currentAlertId) return
+
+      elements.patternsSection.style.opacity = "1"
+      elements.patternsSection.style.transform = "translateY(0)"
+      renderPatterns(analysis.patterns)
+
+      // Show scenarios after patterns
+      state.typingAnimationId = setTimeout(() => {
+        if (state.selectedAlert?.id !== currentAlertId) return
+
+        elements.scenariosSection.style.opacity = "1"
+        elements.scenariosSection.style.transform = "translateY(0)"
+        renderScenarios(analysis.scenarios)
+      }, 400)
+    }, 250)
+  })
+}
+
+function renderQualityIncidentView(data, container) {
+  container.innerHTML = `
+    <div class="quality-incident-view">
+      <!-- Executive Summary -->
+      <div class="qi-section">
+        <h3 class="qi-section-title">
+          <span class="qi-icon">🔥</span>
+          Executive Summary
+        </h3>
+        <p class="qi-summary-text">${data.brief.executive_summary}</p>
+      </div>
+
+      <!-- Key Findings -->
+      <div class="qi-section">
+        <h3 class="qi-section-title">
+          <span class="qi-icon">📌</span>
+          Key Findings
+        </h3>
+        <ul class="qi-findings-list">
+          ${data.brief.key_findings
+            .map(
+              (finding) => `
+            <li class="qi-finding-item">${finding}</li>
+          `,
+            )
+            .join("")}
+        </ul>
+      </div>
+
+      <!-- Root Cause Summary -->
+      <div class="qi-section">
+        <h3 class="qi-section-title">
+          <span class="qi-icon">🧠</span>
+          Root Cause Summary
+        </h3>
+        <div class="qi-defects-grid">
+          ${data.rca.root_cause_summary
+            .map(
+              (defect) => `
+            <div class="qi-defect-card">
+              <div class="qi-defect-header">
+                <span class="qi-defect-code">${defect.defect_code}</span>
+                <span class="qi-defect-severity qi-severity-${defect.severity.toLowerCase()}">${defect.severity}</span>
+              </div>
+              <div class="qi-defect-count">${defect.count} incidents</div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+        <div class="qi-total-incidents">
+          <strong>Total Incidents:</strong> ${data.rca.total_incidents}
+        </div>
+      </div>
+
+      <!-- Incident Trend Chart -->
+      <div class="qi-section">
+        <h3 class="qi-section-title">
+          <span class="qi-icon">📊</span>
+          Incident Trend
+        </h3>
+        <div class="qi-chart-container">
+          <canvas id="incidentTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Correlated Factors -->
+      <div class="qi-section">
+        <h3 class="qi-section-title">
+          <span class="qi-icon">🧩</span>
+          Correlated Factors
+        </h3>
+        <div class="qi-factors-grid">
+          ${Object.entries(data.rca.correlated_factors)
+            .map(
+              ([key, values]) => `
+            <div class="qi-factor-group">
+              <h4 class="qi-factor-title">${key.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}</h4>
+              <div class="qi-factor-items">
+                ${values
+                  .map(
+                    (item) => `
+                  <span class="qi-factor-badge">
+                    ${item.value} <span class="qi-factor-count">(${item.count})</span>
+                  </span>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+
+      <!-- Action Plan -->
+      <div class="qi-section">
+        <h3 class="qi-section-title">
+          <span class="qi-icon">🛠️</span>
+          Action Plan
+        </h3>
+        <ol class="qi-action-list">
+          ${data.brief.action_plan
+            .map(
+              (action) => `
+            <li class="qi-action-item">${action}</li>
+          `,
+            )
+            .join("")}
+        </ol>
+      </div>
+    </div>
+  `
+
+  // Render the chart after DOM update
+  // Use setTimeout to ensure the canvas element is in the DOM and has dimensions
+  setTimeout(() => renderIncidentTrendChart(data.rca.trends.daily_counts), 100)
+}
+
+function renderIncidentTrendChart(dailyCounts) {
+  const canvas = document.getElementById("incidentTrendChart")
+  if (!canvas) return
+
+  const ctx = canvas.getContext("2d")
+
+  // Destroy existing chart if any
+  if (window.incidentChart) {
+    window.incidentChart.destroy()
+  }
+
+  // Prepare data
+  const dates = dailyCounts.map((d) => {
+    const date = new Date(d.date)
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  })
+  const counts = dailyCounts.map((d) => d.count)
+
+  // Create gradient
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300)
+  gradient.addColorStop(0, "rgba(239, 68, 68, 0.3)")
+  gradient.addColorStop(1, "rgba(239, 68, 68, 0.05)")
+
+  // Get dimensions after potential resize or render delay
+  const chartAreaWidth = canvas.offsetWidth - 80 // Account for padding on both sides
+  const chartAreaHeight = 250 - 80 // Account for padding on top and bottom
+
+  canvas.width = canvas.offsetWidth
+  canvas.height = 250
+
+  const padding = 40
+  const chartWidth = canvas.width - padding * 2
+  const chartHeight = canvas.height - padding * 2
+  const maxCount = Math.max(...counts, 1) // Ensure maxCount is at least 1 to avoid division by zero
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  // Draw axes
+  ctx.strokeStyle = "#4b5563"
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(padding, padding)
+  ctx.lineTo(padding, canvas.height - padding) // Y-axis
+  ctx.lineTo(canvas.width - padding, canvas.height - padding) // X-axis
+  ctx.stroke()
+
+  // Draw line chart
+  const stepX = counts.length > 1 ? chartWidth / (counts.length - 1) : chartWidth // Calculate stepX, handle single data point case
+
+  // Draw area fill
+  ctx.fillStyle = gradient
+  ctx.beginPath()
+  if (counts.length > 0) {
+    counts.forEach((count, i) => {
+      const x = padding + i * stepX
+      const y = canvas.height - padding - (count / maxCount) * chartHeight
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+    // Close path by drawing line back to the start of the x-axis
+    ctx.lineTo(padding + (counts.length - 1) * stepX, canvas.height - padding)
+  }
+  ctx.closePath()
+  ctx.fill()
+
+  // Draw line
+  ctx.strokeStyle = "#ef4444"
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  if (counts.length > 0) {
+    counts.forEach((count, i) => {
+      const x = padding + i * stepX
+      const y = canvas.height - padding - (count / maxCount) * chartHeight
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+  }
+  ctx.stroke()
+
+  // Draw points
+  if (counts.length > 0) {
+    counts.forEach((count, i) => {
+      const x = padding + i * stepX
+      const y = canvas.height - padding - (count / maxCount) * chartHeight
+
+      ctx.fillStyle = "#ef4444"
+      ctx.beginPath()
+      ctx.arc(x, y, 4, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.strokeStyle = "#fff"
+      ctx.lineWidth = 2
+      ctx.stroke()
+    })
+  }
+
+  // Draw labels
+  ctx.fillStyle = "#9ca3af"
+  ctx.font = "11px sans-serif"
+  ctx.textAlign = "center"
+  if (dates.length > 0) {
+    dates.forEach((date, i) => {
+      const x = padding + i * stepX
+      ctx.fillText(date, x, canvas.height - padding + 20)
+    })
+  }
+
+  // Draw count labels on Y-axis
+  ctx.textAlign = "right"
+  const yLabelCount = 4 // Number of labels on Y-axis
+  for (let i = 0; i < yLabelCount; i++) {
+    const value = Math.round((maxCount / (yLabelCount - 1)) * i)
+    const y = canvas.height - padding - (i / (yLabelCount - 1)) * chartHeight
+    if (i === yLabelCount - 1) {
+      // Ensure the top label is maxCount if it's a round number
+      ctx.fillText(maxCount.toString(), padding - 10, padding + 4)
+    } else {
+      ctx.fillText(value.toString(), padding - 10, y + 4)
+    }
+  }
 }
 
 function startTypingAnimation(alert) {
@@ -1958,6 +2473,737 @@ function showToast(type, title, message) {
   setTimeout(() => {
     toast.remove()
   }, 3000)
+}
+
+// ========================================
+// Quality Incident Action Rendering
+// ========================================
+
+function renderQualityIncidentActions(data, container) {
+  console.log("[v0] renderQualityIncidentActions called")
+  console.log("[v0] Container:", container)
+  console.log("[v0] Container ID:", container?.id)
+
+  const panelRight = document.querySelector(".panel-right")
+  const scrollContainer = document.querySelector(".actions-scroll-container")
+
+  console.log("[v0] Panel Right:", panelRight)
+  console.log("[v0] Scroll Container:", scrollContainer)
+
+  if (panelRight) {
+    const styles = window.getComputedStyle(panelRight)
+    console.log("[v0] Panel Right computed styles:", {
+      height: styles.height,
+      overflow: styles.overflow,
+      display: styles.display,
+      flexDirection: styles.flexDirection,
+    })
+  }
+
+  if (scrollContainer) {
+    const styles = window.getComputedStyle(scrollContainer)
+    console.log("[v0] Scroll Container computed styles:", {
+      height: styles.height,
+      maxHeight: styles.maxHeight,
+      overflowY: styles.overflowY,
+      flex: styles.flex,
+      minHeight: styles.minHeight,
+    })
+  }
+
+  // After rendering, check content height
+  setTimeout(() => {
+    if (container) {
+      console.log("[v0] Container scroll height:", container.scrollHeight)
+      console.log("[v0] Container client height:", container.clientHeight)
+      console.log("[v0] Container offsetHeight:", container.offsetHeight)
+      console.log("[v0] Should scroll:", container.scrollHeight > container.clientHeight)
+    }
+    if (scrollContainer) {
+      console.log("[v0] Scroll Container scroll height:", scrollContainer.scrollHeight)
+      console.log("[v0] Scroll Container client height:", scrollContainer.clientHeight)
+      console.log("[v0] Scroll Container should scroll:", scrollContainer.scrollHeight > scrollContainer.clientHeight)
+    }
+  }, 100)
+
+  if (!container) {
+    console.log("[v0] ERROR: container not provided for renderQualityIncidentActions!")
+    return
+  }
+
+  const email = data.email || {}
+  const brief = data.brief || {}
+  const actions = data.actions || []
+
+  console.log(
+    "[v0] About to render - email:",
+    !!email.to,
+    "brief:",
+    !!brief.executive_summary,
+    "actions:",
+    actions.length,
+  )
+
+  let html = '<div class="qi-actions-container">'
+
+  // Action 1: Send Apology Email
+  if (email.to || email.subject || email.body) {
+    html += `
+      <div class="qi-action-card">
+        <div class="qi-action-header">
+          <!-- Removed action badge -->
+          <h3 class="qi-action-title">Send Apology Email</h3>
+        </div>
+        <div class="qi-email-editor">
+          <div class="qi-email-field">
+            <label>To:</label>
+            <input type="text" class="qi-email-input" value="${email.to || ""}" data-field="to" />
+          </div>
+          <div class="qi-email-field">
+            <label>Subject:</label>
+            <input type="text" class="qi-email-input" value="${email.subject || ""}" data-field="subject" />
+          </div>
+          <div class="qi-email-field">
+            <label>Body:</label>
+            <textarea class="qi-email-textarea" rows="8" data-field="body">${email.body || ""}</textarea>
+          </div>
+        </div>
+        <div class="qi-action-buttons">
+          <button class="qi-btn qi-btn-secondary" onclick="editEmailAction(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="qi-btn qi-btn-primary" onclick="sendEmail(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send
+          </button>
+          <button class="qi-btn qi-btn-ghost" onclick="saveDraft(this)">Save Draft</button>
+        </div>
+      </div>
+    `
+  }
+
+  // Action 2: Download Quality Brief
+  if (brief.executive_summary || brief.key_findings) {
+    html += `
+      <div class="qi-action-card">
+        <div class="qi-action-header">
+          <!-- Removed action badge -->
+          <h3 class="qi-action-title">Download Quality Brief</h3>
+        </div>
+        <div class="qi-brief-preview">
+          <p class="qi-brief-description">Complete quality incident analysis with executive summary, key findings, and action plan.</p>
+          <div class="qi-brief-stats">
+            <div class="qi-stat-item">
+              <span class="qi-stat-label">Sections</span>
+              <span class="qi-stat-value">5</span>
+            </div>
+            <div class="qi-stat-item">
+              <span class="qi-stat-label">Format</span>
+              <span class="qi-stat-value">PDF</span>
+            </div>
+          </div>
+        </div>
+        <div class="qi-action-buttons">
+          <button class="qi-btn qi-btn-primary" onclick="downloadBrief(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Brief
+          </button>
+        </div>
+      </div>
+    `
+  }
+
+  // Action 3: Create Ops Tasks
+  if (actions) {
+    html += `
+      <div class="qi-action-card">
+        <div class="qi-action-header">
+          <!-- Removed action badge -->
+          <h3 class="qi-action-title">Create Ops Tasks</h3>
+        </div>
+        <div class="qi-tasks-list">
+    `
+
+    if (actions.length > 0) {
+      actions.forEach((action, index) => {
+        html += `
+          <div class="qi-task-item" data-task-index="${index}">
+            <div class="qi-task-header">
+              <span class="qi-task-number">${index + 1}</span>
+              <input type="text" class="qi-task-title-input" value="${action.title || action}" />
+            </div>
+            <textarea class="qi-task-description" rows="2" placeholder="Add task description...">${action.description || ""}</textarea>
+          </div>
+        `
+      })
+    } else {
+      html += `
+        <div class="qi-empty-tasks">
+          <p>No tasks yet. Click "Create Task" to add new operational tasks.</p>
+          <!-- Added button to create new task -->
+          <button class="qi-btn qi-btn-secondary" onclick="addNewTask(this)" style="margin-top: 12px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create Task
+          </button>
+        </div>
+      `
+    }
+
+    html += `
+        </div>
+        <div class="qi-action-buttons">
+          <button class="qi-btn qi-btn-secondary" onclick="editTasks(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="qi-btn qi-btn-primary" onclick="createTasks(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Approve & Create
+          </button>
+        </div>
+      </div>
+    `
+  }
+
+  html += "</div>"
+  container.innerHTML = html
+}
+
+// Action handlers
+function editEmailAction(button) {
+  const card = button.closest(".qi-action-card")
+  const inputs = card.querySelectorAll("input, textarea")
+  inputs.forEach((input) => {
+    input.disabled = false
+    input.classList.add("editing")
+  })
+  button.textContent = "Done Editing"
+  button.onclick = () => {
+    inputs.forEach((input) => {
+      input.disabled = true
+      input.classList.remove("editing")
+    })
+    button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit`
+    button.onclick = () => editEmailAction(button)
+  }
+}
+
+function sendEmail(button) {
+  const card = button.closest(".qi-action-card")
+  const emailData = {
+    to: card.querySelector('[data-field="to"]').value,
+    subject: card.querySelector('[data-field="subject"]').value,
+    body: card.querySelector('[data-field="body"]').value,
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+  }
+
+  console.log("[v0] Sending email:", emailData)
+
+  // TODO: Make POST API call to send email
+  fetch(`${API_CONFIG.baseUrl}/agent/action/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(emailData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] Email sent successfully:", data)
+      alert("Email sent successfully!")
+    })
+    .catch((error) => {
+      console.error("[v0] Error sending email:", error)
+      alert("Failed to send email. Check console for details.")
+    })
+}
+
+function saveDraft(button) {
+  const card = button.closest(".qi-action-card")
+  const emailData = {
+    to: card.querySelector('[data-field="to"]').value,
+    subject: card.querySelector('[data-field="subject"]').value,
+    body: card.querySelector('[data-field="body"]').value,
+  }
+  console.log("[v0] Saving draft:", emailData)
+  alert("Draft saved!")
+}
+
+function downloadBrief(button) {
+  const alertData = state.selectedAlert
+  const briefContent = state.selectedAlert?.detailedData?.brief
+
+  console.log("[v0] Downloading brief for:", alertData)
+
+  fetch(`${API_CONFIG.baseUrl}/agent/action/download-brief`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      account_id: alertData?.id,
+      agent_run_id: alertData?.agentRunId,
+      brief: briefContent,
+      company_name: alertData?.company,
+    }),
+  })
+    .then((response) => response.blob())
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `quality-brief-${alertData?.company}.pdf`
+      a.click()
+    })
+    .catch((error) => {
+      console.error("[v0] Error downloading brief:", error)
+      alert("Failed to download brief. Check console for details.")
+    })
+}
+
+function editTasks(button) {
+  const card = button.closest(".qi-action-card")
+  // Implementation for editing tasks would go here
+  console.log("[v0] Editing tasks...")
+}
+
+function addNewTask(button) {
+  const card = button.closest(".qi-action-card")
+  const tasksList = card.querySelector(".qi-tasks-list")
+
+  // Remove empty state if exists
+  const emptyState = card.querySelector(".qi-empty-tasks")
+  if (emptyState) {
+    emptyState.remove()
+  }
+
+  // Get current task count
+  const taskCount = card.querySelectorAll(".qi-task-item").length
+
+  // Create new task HTML
+  const newTaskHTML = `
+    <div class="qi-task-item" data-task-index="${taskCount}">
+      <div class="qi-task-header">
+        <span class="qi-task-number">${taskCount + 1}</span>
+        <input type="text" class="qi-task-title-input" placeholder="Enter task title..." />
+      </div>
+      <textarea class="qi-task-description" rows="2" placeholder="Add task description..."></textarea>
+    </div>
+  `
+
+  tasksList.insertAdjacentHTML("beforeend", newTaskHTML)
+  console.log("[v0] New task added")
+}
+
+function createTasks(button) {
+  const card = button.closest(".qi-action-card")
+  const taskItems = card.querySelectorAll(".qi-task-item")
+  const tasks = Array.from(taskItems).map((item) => ({
+    title: item.querySelector(".qi-task-title-input").value,
+    description: item.querySelector(".qi-task-description").value,
+  }))
+
+  const taskData = {
+    tasks,
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+  }
+
+  console.log("[v0] Creating tasks:", taskData)
+
+  // TODO: Make POST API call to create tasks
+  fetch(`${API_CONFIG.baseUrl}/agent/action/create-tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(taskData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] Tasks created successfully:", data)
+      alert("Tasks created successfully!")
+    })
+    .catch((error) => {
+      console.error("[v0] Error creating tasks:", error)
+      alert("Failed to create tasks. Check console for details.")
+    })
+}
+
+function renderExpansionOpportunityView(middlePanel, container) {
+  const {
+    primary_signal,
+    competitor_risk,
+    estimated_upside,
+    signal_confidence,
+    executive_summary,
+    detected_signals,
+    commercial_intelligence,
+    revenue_opportunity,
+  } = middlePanel
+
+  const confidencePercent = (signal_confidence * 100).toFixed(0)
+  const upsideFormatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(estimated_upside || 0)
+
+  const html = `
+    <div class="expansion-view">
+      <!-- Executive Summary Card -->
+      <div class="eo-section eo-executive-summary">
+        <div class="eo-section-title">📌 Expansion Opportunity Summary</div>
+        <div class="eo-summary-grid">
+          <div class="eo-metric">
+            <div class="eo-label">Primary Signal</div>
+            <div class="eo-value">${primary_signal || "N/A"}</div>
+          </div>
+          <div class="eo-metric">
+            <div class="eo-label">Competitor Risk</div>
+            <div class="eo-value">${competitor_risk || "N/A"}</div>
+          </div>
+          <div class="eo-metric">
+            <div class="eo-label">Estimated Upside</div>
+            <div class="eo-value eo-upside">${upsideFormatted}</div>
+          </div>
+          <div class="eo-metric">
+            <div class="eo-label">Signal Confidence</div>
+            <div class="eo-confidence-bar">
+              <div class="eo-confidence-fill" style="width: ${confidencePercent}%"></div>
+              <span class="eo-confidence-text">${confidencePercent}%</span>
+            </div>
+          </div>
+        </div>
+        <div class="eo-summary-text">${executive_summary || ""}</div>
+      </div>
+
+      <!-- Detected Signals -->
+      <div class="eo-section">
+        <div class="eo-section-title">📊 Detected Operational Signals</div>
+        
+        ${
+          detected_signals?.usage_anomalies?.length
+            ? `
+          <div class="eo-signals-subsection">
+            <div class="eo-subsection-title">🔹 Usage Anomalies</div>
+            ${detected_signals.usage_anomalies
+              .map(
+                (anomaly) => `
+              <div class="eo-signal-item">
+                <div class="eo-signal-sku">${anomaly.sku || "N/A"}</div>
+                <div class="eo-signal-pattern">${anomaly.pattern || "N/A"}</div>
+                <div class="eo-signal-confidence">
+                  <span class="eo-conf-badge">${(anomaly.confidence * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          detected_signals?.competitor_dependency?.length
+            ? `
+          <div class="eo-signals-subsection">
+            <div class="eo-subsection-title">🔹 Competitor Dependency</div>
+            ${detected_signals.competitor_dependency
+              .map(
+                (dep) => `
+              <div class="eo-signal-item">
+                <div class="eo-signal-label">Our SKU: <span>${dep.our_sku || "N/A"}</span></div>
+                <div class="eo-signal-label">Their SKU: <span>${dep.their_sku || "N/A"}</span></div>
+                <div class="eo-signal-label">Evidence: <span>${dep.evidence || "N/A"}</span></div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          detected_signals?.bom_gaps?.length
+            ? `
+          <div class="eo-signals-subsection">
+            <div class="eo-subsection-title">🔹 BOM Gaps</div>
+            ${detected_signals.bom_gaps
+              .map(
+                (gap) => `
+              <div class="eo-signal-item">
+                <div class="eo-signal-label">Missing SKU: <span>${gap.missing_sku || "N/A"}</span></div>
+                <div class="eo-signal-label">Reason: <span>${gap.reason || "N/A"}</span></div>
+                <div class="eo-signal-label">Linked SKU: <span>${gap.linked_sku || "N/A"}</span></div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+        `
+            : ""
+        }
+      </div>
+
+      <!-- Commercial Intelligence -->
+      <div class="eo-section">
+        <div class="eo-section-title">🧠 Commercial Insights</div>
+        <div class="eo-commercial-card">
+          <div class="eo-commercial-label">Executive Summary</div>
+          <div class="eo-commercial-text">${commercial_intelligence?.brief_summary || ""}</div>
+          
+          ${
+            commercial_intelligence?.commercial_insight?.length
+              ? `
+            <div class="eo-commercial-insights">
+              ${commercial_intelligence.commercial_insight
+                .map(
+                  (insight) => `
+                <div class="eo-insight-item">
+                  <div class="eo-insight-pattern">${insight.pattern || ""}</div>
+                  <div class="eo-insight-impact">${insight.impact || ""}</div>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+
+      <!-- Revenue Opportunity -->
+      <div class="eo-section">
+        <div class="eo-section-title">💰 Revenue Impact Model</div>
+        <div class="eo-revenue-metrics">
+          <div class="eo-revenue-card">
+            <div class="eo-revenue-label">Monthly Revenue</div>
+            <div class="eo-revenue-value">${new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: revenue_opportunity?.currency || "USD",
+              maximumFractionDigits: 0,
+            }).format(revenue_opportunity?.estimated_monthly_revenue || 0)}</div>
+          </div>
+          <div class="eo-revenue-card">
+            <div class="eo-revenue-label">Annual Revenue</div>
+            <div class="eo-revenue-value">${new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: revenue_opportunity?.currency || "USD",
+              maximumFractionDigits: 0,
+            }).format(revenue_opportunity?.estimated_annual_revenue || 0)}</div>
+          </div>
+        </div>
+        ${
+          revenue_opportunity?.assumptions?.length
+            ? `
+          <div class="eo-assumptions">
+            <div class="eo-assumptions-title">Assumptions</div>
+            <ul class="eo-assumptions-list">
+              ${revenue_opportunity.assumptions.map((assumption) => `<li>${assumption}</li>`).join("")}
+            </ul>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    </div>
+  `
+
+  container.innerHTML = html
+}
+
+function renderExpansionActions(rightPanel, container) {
+  console.log("[v0] renderExpansionActions called")
+  console.log("[v0] Container:", container)
+  console.log("[v0] Container ID:", container?.id)
+
+  const panelRight = document.querySelector(".panel-right")
+  const scrollContainer = document.querySelector(".actions-scroll-container")
+
+  console.log("[v0] Panel Right:", panelRight)
+  console.log("[v0] Scroll Container:", scrollContainer)
+
+  if (panelRight) {
+    const styles = window.getComputedStyle(panelRight)
+    console.log("[v0] Panel Right computed styles:", {
+      height: styles.height,
+      overflow: styles.overflow,
+      display: styles.display,
+      flexDirection: styles.flexDirection,
+    })
+  }
+
+  if (scrollContainer) {
+    const styles = window.getComputedStyle(scrollContainer)
+    console.log("[v0] Scroll Container computed styles:", {
+      height: styles.height,
+      maxHeight: styles.maxHeight,
+      overflowY: styles.overflowY,
+      flex: styles.flex,
+      minHeight: styles.minHeight,
+    })
+  }
+
+  // After rendering, check content height
+  setTimeout(() => {
+    if (container) {
+      console.log("[v0] Container scroll height:", container.scrollHeight)
+      console.log("[v0] Container client height:", container.clientHeight)
+      console.log("[v0] Container offsetHeight:", container.offsetHeight)
+      console.log("[v0] Should scroll:", container.scrollHeight > container.clientHeight)
+    }
+    if (scrollContainer) {
+      console.log("[v0] Scroll Container scroll height:", scrollContainer.scrollHeight)
+      console.log("[v0] Scroll Container client height:", scrollContainer.clientHeight)
+      console.log("[v0] Scroll Container should scroll:", scrollContainer.scrollHeight > scrollContainer.clientHeight)
+    }
+  }, 100)
+
+  const { actions = [], deck = {} } = rightPanel
+
+  // Check if there's actual data to display
+  if (!actions || actions.length === 0 || !deck || !deck.slides) {
+    container.innerHTML = '<div class="empty-state">No actions or deck available</div>'
+    return
+  }
+
+  let html = '<div class="eo-actions-container">'
+
+  // ========== ACTION 1: Log CRM Task ==========
+  html += '<div class="eo-action-card">'
+  html += '<div class="eo-action-header">'
+  html += '<span class="eo-action-title">Log CRM Task</span>'
+  html += "</div>"
+
+  // Group actions by type
+  const actionsByType = {}
+  actions.forEach((action) => {
+    if (!actionsByType[action.type]) {
+      actionsByType[action.type] = []
+    }
+    actionsByType[action.type].push(action)
+  })
+
+  const typeLabels = {
+    meeting: "📅 Schedule Review Meeting",
+    task: "✅ Create Action Plan",
+    email: "📧 Alert Supply Chain",
+  }
+
+  html += '<div class="eo-task-list">'
+  Object.entries(actionsByType).forEach(([type, typeActions]) => {
+    typeActions.forEach((action) => {
+      const priorityClass = `priority-${action.priority}`
+      html += `
+        <div class="eo-task-item ${priorityClass}">
+          <div class="eo-task-priority">P${action.priority}</div>
+          <div class="eo-task-content">
+            <div class="eo-task-type">${typeLabels[type] || type}</div>
+            <div class="eo-task-rationale">${action.rationale || ""}</div>
+          </div>
+          <button class="eo-task-btn" onclick="logCRMTask('${type}', ${JSON.stringify(action).replace(/"/g, "&quot;")})">
+            Log Task
+          </button>
+        </div>
+      `
+    })
+  })
+  html += "</div>"
+  html += "</div>"
+
+  // ========== ACTION 2: Commercial Opportunity Deck ==========
+  if (deck.slides && deck.slides.length > 0) {
+    html += '<div class="eo-action-card">'
+    html += '<div class="eo-action-header">'
+    html += '<span class="eo-action-title">Commercial Opportunity Deck</span>'
+    html += "</div>"
+    html += '<div class="eo-deck-preview">'
+    html += `<div class="eo-deck-title">${deck.deck_title || "Expansion Opportunity Analysis"}</div>`
+    html += '<div class="eo-slides-list">'
+
+    deck.slides.forEach((slide, index) => {
+      html += `
+        <div class="eo-slide-item">
+          <span class="eo-slide-number">${index + 1}</span>
+          <span class="eo-slide-title">${slide.title || "Slide " + (index + 1)}</span>
+        </div>
+      `
+    })
+
+    html += "</div>"
+    html += '<div class="eo-deck-actions">'
+    html += `<button class="eo-deck-btn" onclick="downloadExpansionDeck('${deck.deck_title}', ${JSON.stringify(deck).replace(/"/g, "&quot;")})">Download Deck</button>`
+    html += "</div>"
+    html += "</div>"
+  }
+
+  html += "</div>"
+  container.innerHTML = html
+}
+
+function logCRMTask(actionType, actionData) {
+  console.log("[v0] Logging CRM task:", actionType, actionData)
+
+  const typeLabels = {
+    meeting: "Schedule Review Meeting",
+    task: "Create Action Plan",
+    email: "Alert Supply Chain",
+  }
+
+  const payload = {
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+    tasks: [
+      {
+        title: typeLabels[actionType] || actionData.type || "CRM Task",
+        description: actionData.rationale || actionData.description || actionData.details || "",
+      },
+    ],
+  }
+
+  fetch(`${API_CONFIG.baseUrl}/agent/action/create-crm-task`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] CRM task logged successfully:", data)
+      showToast("success", "CRM Task Logged", "Task details have been added to your CRM.")
+    })
+    .catch((error) => {
+      console.error("[v0] Error logging CRM task:", error)
+      showToast("error", "Failed to Log CRM Task", "Please check console for details.")
+    })
+}
+
+function downloadExpansionDeck(deckTitle, deckData) {
+  console.log("[v0] Downloading deck:", deckTitle)
+  // POST to /agent/action/download-deck with deckData and accountId, agentRunId
+  const payload = {
+    ...deckData,
+    deck_title: deckTitle,
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+  }
+  fetch(`${API_CONFIG.baseUrl}/agent/action/download-deck`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.blob())
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${deckTitle.replace(/\s+/g, "-")}.pdf` // Sanitize title for filename
+      a.click()
+      showToast("success", "Deck Downloaded", "Your commercial opportunity deck has been generated.")
+    })
+    .catch((error) => {
+      console.error("[v0] Error downloading deck:", error)
+      showToast("error", "Failed to Download Deck", "Please check console for details.")
+    })
 }
 
 // ========================================
