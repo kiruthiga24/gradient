@@ -6,12 +6,15 @@ from models.base_model import QualityIncidents
 
 from .rag_seed.rag_store import query_docs
 from .llm_factory import get_llm
-from .save_to_db import save_expansion_output, save_qbr_output, save_quality_output
+from .save_to_db import save_expansion_output, save_qbr_output, save_churn_output, save_supply_output, save_quality_output
+import re
 
-from .chains.rca_chain import build_rca_chain
-from .chains.brief_chain import build_brief_chain
-from .chains.action_chain import build_action_chain
-from .chains.email_chain import build_email_chain
+
+
+from .churn_chains.rca_chain import build_rca_chain
+from .churn_chains.brief_chain import build_brief_chain
+from .churn_chains.action_chain import build_action_chain
+from .churn_chains.email_chain import build_email_chain
 
 from .expansion_chains.action_chain import build_expansion_action_chain
 from .expansion_chains.brief_chain import build_expansion_brief_chain
@@ -33,13 +36,27 @@ from .quality_chain.email_chain import build_quality_email_chain
 
 # and reuse json_safe, parse_json_safe already in file
 
+from .supply_chains.action_chain import build_supply_action_chain
+from .supply_chains.brief_chain import build_supply_brief_chain
+from .supply_chains.email_chain import build_supply_email_chain
+from .supply_chains.rca_chain import build_supply_rca_chain
 
 
-def json_safe(obj):
-    """
-    Converts Decimal to float for JSON serialization
-    """
-    return json.dumps(obj, default=lambda x: float(x) if isinstance(x, Decimal) else x)
+
+def sanitize(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize(i) for i in obj]
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    return obj
+
+def json_safe(obj) -> str:
+    """Ensure obj is a JSON string."""
+    if isinstance(obj, str):
+        return obj
+    return json.dumps(obj, ensure_ascii=False)
 
 def parse_json_safe(raw):
     """
@@ -101,6 +118,11 @@ class LLMOrchestrator:
         self.quality_brief_chain = None
         self.quality_action_chain = None
         self.quality_email_chain = None
+        # ---------- Use Case 4: Supply Risk ----------
+        self.supply_risk_rca_chain = None
+        self.supply_risk_brief_chain = None
+        self.supply_risk_action_chain = None
+        self.supply_risk_email_chain = None
 
         self._init_llm()
     
@@ -121,6 +143,19 @@ class LLMOrchestrator:
             self.action_chain = build_action_chain(self.llm)
         if self.email_chain is None:
             self.email_chain = build_email_chain(self.llm)
+
+    def _init_supply_risk_chains(self):
+        if self.supply_risk_rca_chain is None:
+            self.supply_risk_rca_chain = build_supply_rca_chain(self.llm)
+
+        if self.supply_risk_brief_chain is None:
+            self.supply_risk_brief_chain = build_supply_brief_chain(self.llm)
+
+        if self.supply_risk_action_chain is None:
+            self.supply_risk_action_chain = build_supply_action_chain(self.llm)
+
+        if self.supply_risk_email_chain is None:
+            self.supply_risk_email_chain = build_supply_email_chain(self.llm)
     
     def _init_expansion_chains(self):
         if self.expansion_rca_chain is None:
@@ -180,8 +215,11 @@ class LLMOrchestrator:
           - "churn"
           - "expansion"
         """
-        if use_case == "churn":
-            return self._run_churn_pipeline(payload)
+        if use_case == "churn_risk":
+            churn_payload = self._run_churn_pipeline(payload)
+            print(json.dumps(churn_payload, indent=4, sort_keys=True))
+            save_churn_output(db, churn_payload, agent_run_id, payload["account"]["account_id"])
+            return churn_payload
 
         if use_case == "expansion":
             expansion_payload = self._run_expansion_pipeline(payload)
@@ -207,12 +245,20 @@ class LLMOrchestrator:
             save_quality_output(db, quality_payload, agent_run_id)
             return quality_payload
 
+        if use_case == "supply_risk":
+            supply_delay_payload = self._run_supply_risk_pipeline(payload)
+            print(json.dumps(supply_delay_payload, indent=4, sort_keys=True))
+            print(json_safe(supply_delay_payload))
+            try:
+                save_supply_output(db, supply_delay_payload, agent_run_id, payload["account"]["account_id"])
+            except Exception as e:
+                print("save_supply_output failed:", e)
+            return supply_delay_payload
 
         raise ValueError(f"Unsupported use_case: {use_case}")
 
-    
-    def _run_churn_pipeline(self, payload):
-    
+
+    def _run_churn_pipeline(self, payload: dict, account_name: str = "Customer"):
         self._initialize_chains()
         print("=== DEBUG: Starting pipeline ===")
         print(f"Payload: {json.dumps(payload, indent=2)}")
@@ -222,53 +268,67 @@ class LLMOrchestrator:
             raise ValueError("quality_incident pipeline requires payload.account.account_id")
     
         # RAG retrieval
-        rag_docs = query_docs(payload.get("account_name", ""), use_case="churn")
+        rag_docs = query_docs(
+            query="""
+            churn risk retention renewal downgrade usage drop adoption decline
+            inactivity complaints support tickets SLA breach cancellation intent
+            """,
+            k=50,
+            use_case="churn",
+        )
         rag_text = "\n\n".join([d["text"] for d in rag_docs])
         print(f"RAG docs found: {len(rag_docs)}")
         print(f"RAG text preview: {rag_text[:200]}...")
-        
+
+        # Step 1: RCA
         print("=== Step 1: RCA ===")
-        # Step 1: RCA - FIXED: .invoke() with dict input
-        rca_raw = self.rca_chain.invoke({
-            "context": json.dumps(payload), 
-            "rag": rag_text
-        })
-        print(f"RCA raw output type: {type(rca_raw)}")
-        print(f"RCA raw output: {rca_raw}")
-        # rca, _ = parse_json_safe(rca_raw)
-        # print(f"RCA parsed: {rca}")
-        # print(f"Parse error: {_}")
-        
-        # Step 2: Brief - FIXED
+        rca = self.rca_chain.invoke(
+            {
+                "context": json.dumps(payload),
+                "rag": rag_text,
+            }
+        )
+        print(f"RCA raw output type: {type(rca)}")
+        print(f"RCA raw output: {rca}")
+
+        # Step 2: Brief
         print("=== Step 2: Brief ===")
-        brief_raw = self.brief_chain.invoke({"rca": json.dumps(rca_raw),"account_name": payload.get("account_name")}) or {}
-        print(f"Brief raw: {brief_raw}")
-        # brief, _ = parse_json_safe(brief_raw)
-        # print(f"Brief parsed: {brief}")
+        brief = self.brief_chain.invoke(
+            {
+                "rca": json_safe(rca),
+                "account_name": account_name,
+            }
+        )
+        print(f"Brief raw output type: {type(brief)}")
+        print(f"Brief raw output: {brief}")
 
-        # Step 3: Actions - FIXED
+        # Step 3: Actions
         print("=== Step 3: Actions ===")
-        actions_raw = self.action_chain.invoke({"brief": json.dumps(brief_raw)})
-        print(f"Actions raw: {actions_raw}")
-        # actions, _ = parse_json_safe(actions_raw)
-        # print(f"Actions parsed: {actions}")
-        
-        # Step 4: Email - FIXED
-        print("=== Step 4: Email ===")
-        email_raw = self.email_chain.invoke({"brief": json.dumps(brief_raw)})
-        print(f"Email raw: {email_raw}")
+        action = self.action_chain.invoke(
+            {
+                "brief": json_safe(brief),
+            }
+        )
+        print(f"Actions raw output type: {type(action)}")
+        print(f"Actions raw output: {action}")
 
-        # print(f"Email parsed: {email}")
+        # Step 4: Email
+        print("=== Step 4: Email ===")
+        email = self.email_chain.invoke(
+            {
+                "brief": json_safe(brief),
+            }
+        )
+        print(f"Email raw output type: {type(email)}")
+        print(f"Email raw output: {email}")
 
         result = {
-            "use_case": "expansion",
-            "rca": rca_raw or {},
-            "brief": brief_raw or {},
-            "actions": actions_raw or {},
-            "email": email_raw or {},
-            "account_id": account_id
+            "rca": rca or {},
+            "brief": brief or {},
+            "actions": action or {},
+            "email": email or {},
         }
-        print(f"Final result: {json.dumps(result, indent=2)}")
+
         return result
 
 
@@ -538,3 +598,64 @@ class LLMOrchestrator:
         }
         return result
 
+    def _run_supply_risk_pipeline(self, payload: dict):
+        self._init_supply_risk_chains()
+
+        print("=== SUPPLY DELAY PIPELINE STARTED ===")
+
+        rag_docs = query_docs(
+    query="""
+        supply delay late shipment missed SLA raw material shortage inventory coverage 
+        PO delay ASN overdue ETA variance line stoppage backorder risk expediting 
+        reroute supplier alternate carrier air freight credit advance mitigation playbook
+        """,
+    k=50,
+    use_case="supply_risk"
+)
+        rag_text = "\n\n".join([d["text"] for d in rag_docs])
+        print(f"RAG docs found: {len(rag_docs)}")
+        print(f"RAG text preview: {rag_text[:200]}...")
+        # Step 1: RCA
+        print("=== Step 1: RCA ===")
+        rca_chain = build_supply_rca_chain(self.llm)
+        prompt_inputs = {
+            "context": json_safe(payload),
+            "rag": rag_text
+        }
+        rca = rca_chain.invoke(prompt_inputs)
+        print(f"RCA raw output type: {type(rca)}")
+        print(f"RCA raw output: {rca}")
+        # Step 2: Brief
+        print("=== Step 2: Brief ===")
+        brief_chain = build_supply_brief_chain(self.llm)
+        prompt_inputs = {
+            "rca": json_safe(rca)
+        }
+        brief = brief_chain.invoke(prompt_inputs)
+        print(f"BRIEF raw output type: {type(brief)}")
+        print(f"BRIEF raw output: {brief}")
+        # Step 3: Actions
+        print("=== Step 3: Actions ===")
+        action_chain = build_supply_action_chain(self.llm)
+        prompt_inputs = {
+            "brief": json_safe(brief)
+        }
+        actions = action_chain.invoke(prompt_inputs)
+        print(f"ACTIONS raw output type: {type(actions)}")
+        print(f"ACTIONS raw output: {actions}")
+        # Step 4: Email
+        print("=== Step 4: Email ===")
+        email_chain = build_supply_email_chain(self.llm)
+        prompt_inputs = {
+            "brief": json_safe(brief)
+        }
+        email = email_chain.invoke(prompt_inputs)
+        print(f"EMAIL raw output type: {type(email)}")
+        print(f"EMAIL raw output: {email}")
+        result = {
+            "rca": rca or {},
+            "brief": brief or {},
+            "actions": actions or {},
+            "email": email or {},
+        }
+        return result

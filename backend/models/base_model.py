@@ -214,31 +214,43 @@ class ChurnRiskAssessments(BaseModel, Base):
 
 class RcaAnalysis(BaseModel, Base):
     __tablename__ = "rca_analysis"
-
     rca_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    signal_id = Column(UUID(as_uuid=True))
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    severity = Column(String(50))
+    # signal_id = Column(UUID(as_uuid=True))
+    business_impact = Column(String(255))
     root_causes = Column(JSONB)                # JSON payload from LLM
     confidence_score = Column(Numeric(5,2))
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class ChurnBriefs(BaseModel, Base):
     __tablename__ = "churn_briefs"
-
     brief_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    signal_id = Column(UUID(as_uuid=True))
-    account_id = Column(UUID(as_uuid=True))
-    brief_text = Column(Text)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    title = Column(String(50))
+    risk_level = Column(String(50))
+    recommended_focus = Column(String(100))
+    key_drivers = Column(JSONB)
+    # signal_id = Column(UUID(as_uuid=True))
+    # account_id = Column(UUID(as_uuid=True))
+    exec_summary = Column(String(225))
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())  
 
 class EmailDrafts(BaseModel, Base):
     __tablename__ = "email_drafts"
 
     email_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    signal_id = Column(UUID(as_uuid=True))
-    to_email = Column(String(255))
+    agent_run_id = Column(UUID(as_uuid=True))
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    # to_email = Column(String(255))
     subject = Column(String(255))
     body_text = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class CrmActivities(BaseModel, Base):
     __tablename__ = "crm_activities"
@@ -255,12 +267,16 @@ class Recommendations(BaseModel, Base):
     __tablename__ = "recommendations"
 
     recommendation_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    signal_id = Column(UUID(as_uuid=True))
-    account_id = Column(UUID(as_uuid=True))
-    action_type = Column(String(100))
+    agent_run_id = Column(UUID(as_uuid=True))
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    # action_type = Column(String(100))
     action_details = Column(Text)
+    due_date = Column(Date)
+    owner = Column(String(50))
     priority = Column(String(50))
+    # status = Column(String(50))
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class LlmPrompts(BaseModel, Base):
     __tablename__ = "llm_prompts"
@@ -305,8 +321,7 @@ class ExpansionRcaAnalysis(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     usage_anomalies = Column(JSONB, nullable=True)
     competitor_dependency = Column(JSONB, nullable=True)
     bom_gaps = Column(JSONB, nullable=True)
@@ -320,8 +335,7 @@ class ExpansionBrief(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     brief_summary = Column(Text, nullable=False)
     whitespace_opportunities = Column(JSONB, nullable=True)
     cross_sell_targets = Column(JSONB, nullable=True)
@@ -334,8 +348,7 @@ class ExpansionRevenueEstimate(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     estimated_monthly_revenue = Column(Numeric, nullable=False)
     estimated_annual_revenue = Column(Numeric, nullable=False)
     currency = Column(String(10), nullable=False)
@@ -350,8 +363,7 @@ class ExpansionRecommendation(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     priority = Column(Integer, nullable=False)
     recommendation_type = Column(String(50), nullable=False)
 
@@ -367,8 +379,7 @@ class ExpansionDeck(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     deck_title = Column(Text, nullable=False)
     slide_count = Column(Integer, nullable=False)
 
@@ -382,8 +393,7 @@ class QbrRcaAnalysis(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     trends = Column(JSONB, nullable=True)
     root_causes = Column(JSONB, nullable=True)
     signals = Column(JSONB, nullable=True)
@@ -397,8 +407,7 @@ class QbrBrief(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     executive_summary = Column(Text, nullable=True)
     key_wins = Column(JSONB, nullable=True)
     key_risks = Column(JSONB, nullable=True)
@@ -412,8 +421,7 @@ class QbrOpportunity(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     type = Column(Text, nullable=False)  # "upsell", "cross-sell", "whitespace"
     sku = Column(Text, nullable=True)
     rationale = Column(Text, nullable=True)
@@ -427,7 +435,7 @@ class QbrAction(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     title = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     priority = Column(Text, nullable=True)  # High / Medium / Low
@@ -442,7 +450,7 @@ class QbrDeck(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     deck_title = Column(Text, nullable=False)
     slides = Column(JSONB, nullable=True)  # JSON array of slides
 
@@ -454,7 +462,7 @@ class QbrTalkingPoints(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_run_id = Column(UUID(as_uuid=True), nullable=False)
-    account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
     talking_points = Column(JSONB, nullable=True)  # JSON array of bullet points
 
     created_at = Column(DateTime, server_default=func.now())
@@ -463,7 +471,7 @@ class QualityRcaAnalysis(Base):
     __tablename__ = "quality_rca_analysis"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
+    
     agent_run_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     account_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
@@ -529,3 +537,57 @@ class QualityEmail(Base):
     to_address = Column(String, nullable=True)  # KAM can override later
 
     created_at = Column(DateTime, server_default=func.now())
+class SupplyRca(Base):
+        __tablename__ = "supply_rca"
+
+        rca_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+        agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+        account_id = Column(UUID(as_uuid=True), nullable=False)
+        root_causes = Column(JSONB, nullable=True)
+        business_impact = Column(String(100), nullable=True)
+        confidence_score = Column(Numeric(5,2))
+        severity = Column(String(15), nullable=True)
+        created_at = Column(DateTime, server_default=func.now())
+        updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())    
+
+class SupplyBrief(Base):
+    __tablename__ = "supply_briefs"
+
+    brief_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    situation = Column(Text)
+    priority = Column(String(32))
+    urgency_score = Column(Integer)
+    key_metrics = Column(JSONB) 
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime,server_default=func.now(), onupdate=func.now())
+
+class SupplyAction(Base):
+    __tablename__ = "supply_actions"
+
+    action_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    follow_up_action = Column(JSONB) 
+    immediate_action = Column(JSONB)
+    success_criteria = Column(JSONB)
+    owner = Column(JSONB)
+    timeline = Column(String(32))
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+class SupplyEmail(Base):
+    __tablename__ = "supply_emails"
+
+    email_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_run_id = Column(UUID(as_uuid=True), nullable=False)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    subject = Column(Text)
+    body_text = Column(Text)
+    priority = Column(String(32))
+    recipients = Column(JSONB)  # list of emails
+    cc = Column(JSONB)          # list of emails
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
