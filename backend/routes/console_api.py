@@ -88,43 +88,50 @@ def run_churn():
     try:
         logger.info("Expansion LLM started successfully")
 
-        row = db.query(LLMSignalPayloads) \
+        rows = db.query(LLMSignalPayloads) \
         .filter(LLMSignalPayloads.use_case_name == "churn_risk") \
         .order_by(LLMSignalPayloads.created_at.desc()) \
-        .limit(1) \
-        .first()
+        .all()
 
 
-        if not row:
+        if not rows:
             return jsonify({"error": "No Churn payload found"}), 404
         
 
         print("*********")
-        print("Row", row)
+        print("Row", rows)
 
-        payload_id = row.payload_id
-        score = row.final_score
-        agent_run_id = row.agent_run_id
-        print(agent_run_id)
-        payload_json = row.payload_json
-        payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
-        payload = to_json_safe(payload_raw)
-        payload["payload_id"] = str(payload_id)
-        payload["final_score"] = float(score) if isinstance(score, Decimal) else score
-        print("Payload", payload)
+        responses = []
+        for row in rows:
+            payload_id = row.payload_id
+            score = row.final_score
+            agent_run_id = row.agent_run_id
+            print(agent_run_id)
+            payload_json = row.payload_json
+            payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+            payload = to_json_safe(payload_raw)
+            payload["payload_id"] = str(payload_id)
+            payload["final_score"] = float(score) if isinstance(score, Decimal) else score
+            print("Payload", payload)
 
-        # Call orchestrator
-        result = llm.run_pipeline(
-            db,
-            use_case="churn_risk",
-            payload=payload,
-            agent_run_id=agent_run_id
-        )
+            # Call orchestrator
+            result = llm.run_pipeline(
+                db,
+                use_case="churn_risk",
+                payload=payload,
+                agent_run_id=agent_run_id
+            )
+
+            responses.append({
+                "payload_id": str(payload_id),
+                "agent_run_id": str(agent_run_id),
+                "llm_output": to_json_safe(result)  # Ensure JSON serializable
+            })
 
         return jsonify({
-            "payload_id": str(payload_id),
             "status": "processed",
-            "llm_output": result
+            "records_processed": len(responses),
+            "results": responses
         })
 
     except Exception as e:
@@ -141,45 +148,52 @@ def run_expansion():
     try:
         logger.info("Expansion LLM started successfully")
 
-        row = db.query(LLMSignalPayloads) \
+        rows = db.query(LLMSignalPayloads) \
         .filter(LLMSignalPayloads.use_case_name == "expansion_opportunity") \
         .order_by(LLMSignalPayloads.created_at.desc()) \
-        .limit(1) \
-        .first()
+        .all()
 
 
-        if not row:
+        if not rows:
             return jsonify({"error": "No expansion payload found"}), 404
         
 
+        responses = []
         print("*********")
-        print("Row", row)
+        print("Row", rows)
 
-        payload_id = row.payload_id
-        score = row.final_score
-        agent_run_id = row.agent_run_id
-        print(agent_run_id)
-        payload_json = row.payload_json
-        payload = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
-        payload["payload_id"] = str(payload_id)
-        payload["final_score"] = score
+        for row in rows:
+            payload_id = row.payload_id
+            score = row.final_score
+            agent_run_id = row.agent_run_id
+            print(agent_run_id)
+            payload_json = row.payload_json
+            payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+            payload = to_json_safe(payload_raw)
+            payload["payload_id"] = str(payload_id)
+            payload["final_score"] = float(score) if isinstance(score, Decimal) else score
+            print("Payload", payload)
 
-        print("Payload", payload)
+            # Call orchestrator
+            result = llm.run_pipeline(
+                db,
+                use_case="qbr",
+                payload=payload,
+                agent_run_id=agent_run_id
+            )
 
-        # Call orchestrator
-        result = llm.run_pipeline(
-            db,
-            use_case="expansion",
-            payload=payload,
-            agent_run_id=agent_run_id
-        )
+            responses.append({
+                "payload_id": str(payload_id),
+                "agent_run_id": str(agent_run_id),
+                "llm_output": to_json_safe(result)  # Ensure JSON serializable
+            })
 
         return jsonify({
-            "payload_id": str(payload_id),
             "status": "processed",
-            "llm_output": result
+            "records_processed": len(responses),
+            "results": responses
         })
-
+    
     except Exception as e:
         logger.error(f"Signal detection failed: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -195,44 +209,50 @@ def run_qbr():
     try:
         logger.info("QBR LLM started successfully")
 
-        row = db.query(LLMSignalPayloads) \
+        rows = db.query(LLMSignalPayloads) \
         .filter(LLMSignalPayloads.use_case_name == "qbr_auto_generation") \
         .order_by(LLMSignalPayloads.created_at.desc()) \
-        .limit(1) \
-        .first()
+        .all()
 
 
-        if not row:
+        if not rows:
             return jsonify({"error": "No qbr payload found"}), 404
         
 
         print("*********")
-        print("Row", row)
-
-        payload_id = row.payload_id
-        score = row.final_score
-        agent_run_id = row.agent_run_id
-        payload_json = row.payload_json
-        payload = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
-        payload["payload_id"] = str(payload_id)
-        payload["final_score"] = score
-        payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
-        payload = to_json_safe(payload_raw)
-
-        print("Payload", payload)
+        print("Row", rows)
+        
+        responses = []
+        for row in rows:
+            payload_id = row.payload_id
+            score = row.final_score
+            agent_run_id = row.agent_run_id
+            print(agent_run_id)
+            payload_json = row.payload_json
+            payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+            payload = to_json_safe(payload_raw)
+            payload["payload_id"] = str(payload_id)
+            payload["final_score"] = float(score) if isinstance(score, Decimal) else score
+            print("Payload", payload)
 
         # Call orchestrator
-        result = llm.run_pipeline(
-            db,
-            use_case="qbr",
-            payload=payload,
-            agent_run_id=agent_run_id
-        )
+            result = llm.run_pipeline(
+                db,
+                use_case="qbr",
+                payload=payload,
+                agent_run_id=agent_run_id
+            )
+
+            responses.append({
+                "payload_id": str(payload_id),
+                "agent_run_id": str(agent_run_id),
+                "llm_output": to_json_safe(result)  # Ensure JSON serializable
+            })
 
         return jsonify({
-            "payload_id": str(payload_id),
             "status": "processed",
-            "llm_output": result
+            "records_processed": len(responses),
+            "results": responses
         })
 
     except Exception as e:
@@ -250,15 +270,50 @@ def run_quality_inc():
     try:
         logger.info("Quality LLM started successfully")
 
-        row = db.query(LLMSignalPayloads) \
+        rows = db.query(LLMSignalPayloads) \
         .filter(LLMSignalPayloads.use_case_name == "quality_incident") \
         .order_by(LLMSignalPayloads.created_at.desc()) \
-        .limit(1) \
-        .first()
+        .all()
 
-
-        if not row:
+        if not rows:
             return jsonify({"error": "No qbr payload found"}), 404
+        
+        print("*********")
+        print("Row", rows)
+
+        responses = []
+        for row in rows:
+            payload_id = row.payload_id
+            score = row.final_score
+            agent_run_id = row.agent_run_id
+            print(agent_run_id)
+            payload_json = row.payload_json
+            payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+            payload = to_json_safe(payload_raw)
+            payload["payload_id"] = str(payload_id)
+            payload["final_score"] = float(score) if isinstance(score, Decimal) else score
+            print("Payload", payload)
+
+            # Call orchestrator
+            result = llm.run_pipeline(
+                db,
+                use_case="quality_incident",
+                payload=payload,
+                agent_run_id=agent_run_id
+            )
+
+            responses.append({
+                "payload_id": str(payload_id),
+                "agent_run_id": str(agent_run_id),
+                "llm_output": to_json_safe(result)  # Ensure JSON serializable
+            })
+
+        return jsonify({
+            "status": "processed",
+            "records_processed": len(responses),
+            "results": responses
+        })
+
     except Exception as e:
         logger.error(f"Signal detection failed: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -268,42 +323,49 @@ def run_quality_inc():
 def run_supply_risk():
     db = SessionLocal()
     try:
-        row = db.query(LLMSignalPayloads) \
+        rows = db.query(LLMSignalPayloads) \
         .filter(LLMSignalPayloads.use_case_name == "supply_risk") \
         .order_by(LLMSignalPayloads.created_at.desc()) \
-        .limit(1) \
-        .first()
-        if not row:
+        .all()
+        if not rows:
             return jsonify({"message": "No supply risk records"}), 404
         
         print("*********")
-        print("Row", row)
+        print("Row", rows)
 
-        payload_id = row.payload_id
-        score = row.final_score
-        agent_run_id = row.agent_run_id
-        payload_json = row.payload_json
-        payload = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
-        payload["payload_id"] = str(payload_id)
-        payload["final_score"] = score
-        payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
-        payload = to_json_safe(payload_raw)
-               
-        print("Payload", payload)
+        responses = []
+
+        for row in rows:
+            payload_id = row.payload_id
+            score = row.final_score
+            agent_run_id = row.agent_run_id
+            print(agent_run_id)
+            payload_json = row.payload_json
+            payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+            payload = to_json_safe(payload_raw)
+            payload["payload_id"] = str(payload_id)
+            payload["final_score"] = float(score) if isinstance(score, Decimal) else score
+            print("Payload", payload)
 
         # Call orchestrator
-        result = llm.run_pipeline(
-            db,
-            use_case="supply_risk",
-            payload=payload,
-            agent_run_id=agent_run_id
-        )
+            result = llm.run_pipeline(
+                db,
+                use_case="supply_risk",
+                payload=payload,
+                agent_run_id=agent_run_id
+            )
+
+            responses.append({
+                "payload_id": str(payload_id),
+                "agent_run_id": str(agent_run_id),
+                "llm_output": to_json_safe(result)  # Ensure JSON serializable
+            })
 
         return jsonify({
-            "payload_id": str(payload_id),
             "status": "processed",
-            "llm_output": result
-        })
+            "records_processed": len(responses),
+            "results": responses
+        })        
 
     except Exception as e:
         logger.error(f"Signal detection failed: {str(e)}")
