@@ -14,7 +14,7 @@ USE_CASES = [
 def test_api():
     print(f"\n--- Testing:  ---")
 
-    url = f"{BASE_URL}/agent/data/quality_incident/30fb6aac-20ac-4705-8780-741e499138d7/14cd679e-84b2-4c33-91d7-905f11ec912b"
+    url = f"{BASE_URL}/agent/data/supply_risk/857990fb-993c-46ca-830d-e3ed67128470/14cd679e-84b2-4c33-91d7-905f11ec912b"
     response = requests.get(url)
 
     print("Status:", response.status_code)

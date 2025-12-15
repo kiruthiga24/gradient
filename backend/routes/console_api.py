@@ -425,7 +425,7 @@ def get_left_pane_by_use_case(use_case):
         })
     return jsonify({"data": response})
 
-@console.route("/agent/data/churn-risk/<account_id>/<agent_run_id>", methods=["GET"])
+@console.route("/agent/data/churn_risk/<account_id>/<agent_run_id>", methods=["GET"])
 def get_churn_middle_pane(account_id, agent_run_id):
 
     # FETCH RCA

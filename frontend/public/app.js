@@ -881,7 +881,7 @@ const alertsData = {
       metrics: { rate: "4.2%", batch: "B-2024-1847" },
       timestamp: "35 min ago",
       analysis: {
-        summary: "Defect rate spiked to 4.2% in batch B-2024-1847, well above 1% threshold. Quality hold recommended.",
+        summary: "Defect rate to 4.2% in batch B-2024-1847, well above 1% threshold. Quality hold recommended.",
         patterns: [
           { icon: "⚠️", label: "Defect Rate", value: "4.2% (threshold 1%)" },
           { icon: "📦", label: "Affected Batch", value: "B-2024-1847" },
@@ -1037,6 +1037,182 @@ const alertsData = {
       ],
     },
   ],
+  quality: [
+    {
+      id: "quality-1",
+      company: "Alpha Manufacturing",
+      type: "Defect Spike",
+      severity: "critical",
+      score: 95,
+      metrics: { batch: "B-2024-1847", rate: "4.2%" },
+      timestamp: "5 min ago",
+      agentRunId: "run_12345",
+      useCase: "quality_incident",
+      analysis: {
+        summary:
+          "Defect rate for batch B-2024-1847 has spiked to 4.2%, significantly exceeding the acceptable threshold of 1%. This indicates a potential issue in the production process.",
+        patterns: [
+          { icon: "⚠️", label: "Defect Rate", value: "4.2% (threshold 1%)" },
+          { icon: "📦", label: "Affected Batch", value: "B-2024-1847" },
+          { icon: "🔍", label: "Defect Type", value: "Component Failure" },
+          { icon: "📊", label: "Units Affected", value: "~840 units" },
+        ],
+        scenarios: [
+          { title: "Initiate Quality Hold", impact: "Prevent distribution of affected batch" },
+          { title: "Supplier Root Cause Analysis", impact: "Identify and address supplier defect source" },
+          { title: "Batch Recall", impact: "Protect customer safety and brand reputation" },
+        ],
+      },
+      actions: [
+        {
+          type: "recovery",
+          title: "Initiate Quality Hold",
+          description: "Place batch B-2024-1847 on quality hold, preventing further distribution.",
+          due: "Immediate",
+          owner: "QA Team",
+          impact: "Critical",
+        },
+        {
+          type: "crm",
+          title: "Notify Supplier",
+          description: "Alert the supplier about the defect rate and request immediate investigation.",
+          due: "Today",
+          owner: "Procurement",
+          impact: "High",
+        },
+      ],
+    },
+    {
+      id: "quality-2",
+      company: "Beta Electronics",
+      type: "Performance Degradation",
+      severity: "high",
+      score: 82,
+      metrics: { latency: "+250ms", errors: "1.5%" },
+      timestamp: "15 min ago",
+      agentRunId: "run_67890",
+      useCase: "quality_incident",
+      analysis: {
+        summary:
+          "System latency has increased by 250ms, and the error rate has risen to 1.5%. This could impact user experience and system reliability.",
+        patterns: [
+          { icon: "⚡", label: "Latency Spike", value: "+250ms average" },
+          { icon: "❌", label: "Error Rate", value: "1.5% (from 0.3%)" },
+          { icon: "🗄️", label: "DB Load", value: "75% CPU usage" },
+        ],
+        scenarios: [
+          { title: "Optimize Database Queries", impact: "Reduce latency by 150ms" },
+          { title: "Implement Caching Layer", impact: "Decrease DB load by 40%" },
+          { title: "Scale Infrastructure", impact: "Improve system resilience" },
+        ],
+      },
+      actions: [
+        {
+          type: "recovery",
+          title: "Optimize Database Queries",
+          description: "Analyze and optimize slow-running database queries.",
+          due: "Immediate",
+          owner: "DevOps",
+          impact: "High",
+        },
+        {
+          type: "email",
+          title: "Notify Engineering Team",
+          description: "Alert the on-call engineering team about the performance degradation.",
+          due: "Immediate",
+          owner: "System",
+          impact: "Critical",
+        },
+      ],
+    },
+  ],
+  qbr: [
+    {
+      id: "qbr-1",
+      company: "Acme Corp",
+      type: "QBR Auto-Generation",
+      severity: "low",
+      score: 90,
+      metrics: { qtr: "Q1 2024", status: "Ready" },
+      timestamp: "1 hour ago",
+      agentRunId: "qbr_run_abc",
+      useCase: "qbr_auto_generation",
+      analysis: {
+        summary: "QBR report for Acme Corp for Q1 2024 is ready. Key insights and recommendations are highlighted.",
+        patterns: [
+          { icon: "📅", label: "Quarter", value: "Q1 2024" },
+          { icon: "📄", label: "Report Status", value: "Generated" },
+          { icon: "📈", label: "Key Trends", value: "Positive growth in user engagement" },
+          { icon: "⚠️", label: "Risks", value: "Potential churn indicators identified" },
+        ],
+        scenarios: [
+          { title: "Review Growth Opportunities", impact: "+$20K ARR" },
+          { title: "Address Churn Risks", impact: "+10% Retention" },
+          { title: "Strategic Planning Session", impact: "Alignment on future roadmap" },
+        ],
+      },
+      actions: [
+        {
+          type: "crm",
+          title: "Schedule QBR Meeting",
+          description: "Book a meeting with Acme Corp stakeholders to discuss the QBR.",
+          due: "This Week",
+          owner: "Account Manager",
+          impact: "High",
+        },
+        {
+          type: "email",
+          title: "Send QBR Report Summary",
+          description: "Email a summary of the QBR findings to key stakeholders.",
+          due: "Today",
+          owner: "Auto-send",
+          impact: "Medium",
+        },
+        {
+          type: "presentation",
+          title: "Prepare Presentation Deck",
+          description: "Generate a presentation deck based on the QBR analysis.",
+          due: "Tomorrow",
+          owner: "Sales Enablement",
+          impact: "High",
+        },
+      ],
+    },
+    {
+      id: "qbr-2",
+      company: "Beta Electronics",
+      type: "QBR Auto-Generation",
+      severity: "low",
+      score: 88,
+      metrics: { qtr: "Q1 2024", status: "Processing" },
+      timestamp: "2 hours ago",
+      agentRunId: "qbr_run_def",
+      useCase: "qbr_auto_generation",
+      analysis: {
+        summary:
+          "QBR report for Beta Electronics for Q1 2024 is currently being generated. Key metrics and insights will be available shortly.",
+        patterns: [
+          { icon: "⏳", label: "Status", value: "Processing" },
+          { icon: "📊", label: "Data Sources", value: "Pulling from CRM, Usage, and Support" },
+          { icon: "🤖", label: "Agent", value: "QBR Auto-Generation Agent" },
+        ],
+        scenarios: [
+          { title: "Monitor Generation Progress", impact: "Ensure timely report delivery" },
+          { title: "Review Draft Report", impact: "Initial quality check" },
+        ],
+      },
+      actions: [
+        {
+          type: "crm",
+          title: "Create QBR Task",
+          description: "Monitor QBR generation status.",
+          due: "Today",
+          owner: "System",
+          impact: "Low",
+        },
+      ],
+    },
+  ],
 }
 
 const agentNames = {
@@ -1097,46 +1273,18 @@ const state = {
 // DOM Elements
 // ========================================
 
-const elements = {
-  alertsList: document.getElementById("alertsList"),
-  alertCount: document.getElementById("alertCount"),
-  agentName: document.getElementById("agentName"),
-  analysisContent: document.getElementById("analysisContent"),
-  summarySection: document.getElementById("summarySection"),
-  summaryText: document.getElementById("summaryText"),
-  patternsSection: document.getElementById("patternsSection"),
-  patternsGrid: document.getElementById("patternsGrid"),
-  scenariosSection: document.getElementById("scenariosSection"),
-  scenariosList: document.getElementById("scenariosList"),
-  actionsList: document.getElementById("actionsList"),
-  qualityIncidentView: document.getElementById("qualityIncidentView"),
-  expansionOpportunityView: document.getElementById("expansionOpportunityView"),
-  defaultAnalysisView: document.getElementById("defaultAnalysisView"),
-  qualityIncidentActions: document.getElementById("qualityIncidentActions"),
-  expansionOpportunityActions: document.getElementById("expansionOpportunityActions"),
-  modalOverlay: document.getElementById("modalOverlay"),
-  toastContainer: document.getElementById("toastContainer"),
-  themeToggle: document.getElementById("themeToggle"),
-  createAgentBtn: document.getElementById("createAgentBtn"),
-  modalClose: document.getElementById("modalClose"),
-  modalBack: document.getElementById("modalBack"),
-  modalNext: document.getElementById("modalNext"),
-  approveActionsBtn: document.getElementById("approveActionsBtn"),
-  simulateBtn: document.getElementById("simulateBtn"),
-  evidenceBtn: document.getElementById("evidenceBtn"),
-  approveAllBtn: document.getElementById("exportBtn"), // Corrected ID based on previous code
-  exportBtn: document.getElementById("exportBtn"),
-  thresholdInput: document.getElementById("thresholdInput"),
-  thresholdValue: document.getElementById("thresholdValue"),
-}
+// Declare elements object at top level, initialize in init()
+let elements = {}
 
 // ========================================
 // API Functions
 // ========================================
 
 async function loadAlertsFromAPI(useCase = "churn") {
+  console.log("[v0] loadAlertsFromAPI called with useCase:", useCase)
   try {
     const apiParam = useCaseToAPIParam[useCase] || "churn_risk"
+    console.log("[v0] Mapped API param:", apiParam)
     const url = `${API_CONFIG.baseUrl}/signals/left-pane/${apiParam}`
 
     console.log(`[v0] Fetching alerts from: ${url}`)
@@ -1246,6 +1394,21 @@ async function loadAgentDataFromAPI(alert) {
         middle_panel: fetchedData.middle_panel || null,
         right_panel: fetchedData.right_panel || null,
         brief: fetchedData.brief || null, // Add brief for quality incident view
+        // Add QBR specific data
+        trends: fetchedData.trends || null,
+        root_causes: fetchedData.root_causes || null,
+        opportunities: fetchedData.opportunities || null,
+        signals: fetchedData.signals || null, // Add signals for QBR
+        // Add QBR right panel data
+        deck: fetchedData.deck || null,
+        talking_points: fetchedData.talking_points || null,
+        // Add churn specific data
+        commercial_brief: fetchedData.commercial_brief || null,
+        detected_root_causes: fetchedData.detected_root_causes || null,
+        risk_summary: fetchedData.risk_summary || null,
+        email_draft: fetchedData.email_draft || null,
+        // Supply specific data
+        recovery: fetchedData.recovery || null,
       }
     } else {
       // If fetching failed, return cached data
@@ -1301,11 +1464,53 @@ async function refreshAlerts() {
 // ========================================
 
 async function init() {
+  console.log("[v0] Init function called")
   // Set initial theme
   document.documentElement.setAttribute("data-theme", state.theme)
 
+  // Initialize all DOM element references
+  elements = {
+    alertsList: document.getElementById("alertsList"),
+    alertCount: document.getElementById("alertCount"),
+    agentName: document.getElementById("agentName"),
+    analysisContent: document.getElementById("analysisContent"),
+    summarySection: document.getElementById("summarySection"),
+    summaryText: document.getElementById("summaryText"),
+    patternsSection: document.getElementById("patternsSection"),
+    patternsGrid: document.getElementById("patternsGrid"),
+    scenariosSection: document.getElementById("scenariosSection"),
+    scenariosList: document.getElementById("scenariosList"),
+    actionsList: document.getElementById("actionsList"),
+    qualityIncidentView: document.getElementById("qualityIncidentView"),
+    expansionOpportunityView: document.getElementById("expansionOpportunityView"),
+    defaultAnalysisView: document.getElementById("defaultAnalysisView"),
+    qbrView: document.getElementById("qbrView"), // Keep this for initial check, will be created if missing
+    qualityIncidentActions: document.getElementById("qualityIncidentActions"),
+    expansionOpportunityActions: document.getElementById("expansionOpportunityActions"),
+    // Add QBR actions container to elements
+    qbrActions: document.getElementById("qbrActions"),
+    modalOverlay: document.getElementById("modalOverlay"),
+    toastContainer: document.getElementById("toastContainer"),
+    themeToggle: document.getElementById("themeToggle"),
+    createAgentBtn: document.getElementById("createAgentBtn"),
+    modalClose: document.getElementById("modalClose"),
+    modalBack: document.getElementById("modalBack"),
+    modalNext: document.getElementById("modalNext"),
+    approveActionsBtn: document.getElementById("approveActionsBtn"),
+    simulateBtn: document.getElementById("simulateBtn"),
+    evidenceBtn: document.getElementById("evidenceBtn"),
+    approveAllBtn: document.getElementById("exportBtn"),
+    exportBtn: document.getElementById("exportBtn"),
+    thresholdInput: document.getElementById("thresholdInput"),
+    thresholdValue: document.getElementById("thresholdValue"),
+  }
+
+  console.log("[v0] Elements initialized, qbrView:", elements.qbrView)
+
+  console.log("[v0] About to call loadAlertsFromAPI with useCase:", state.currentUseCase)
   // Fetch alerts from Flask API
   const apiAlerts = await loadAlertsFromAPI(state.currentUseCase) // Pass currentUseCase
+  console.log("[v0] loadAlertsFromAPI returned:", apiAlerts)
   state.currentAlerts = apiAlerts
 
   // Render initial alerts
@@ -1349,28 +1554,38 @@ function setupEventListeners() {
   elements.modalNext.addEventListener("click", nextModalStep)
 
   // Analysis action buttons
-  elements.approveActionsBtn.addEventListener("click", () => {
-    approveAllActions()
-    showToast("success", "Actions Approved", "All recommended actions have been approved")
-  })
+  if (elements.approveActionsBtn) {
+    elements.approveActionsBtn.addEventListener("click", () => {
+      approveAllActions()
+      showToast("success", "Actions Approved", "All recommended actions have been approved")
+    })
+  }
 
-  elements.simulateBtn.addEventListener("click", () => {
-    showToast("info", "Simulation Started", "Running impact simulation...")
-  })
+  if (elements.simulateBtn) {
+    elements.simulateBtn.addEventListener("click", () => {
+      showToast("info", "Simulation Started", "Running impact simulation...")
+    })
+  }
 
-  elements.evidenceBtn.addEventListener("click", () => {
-    showToast("info", "Loading Evidence", "Gathering supporting data...")
-  })
+  if (elements.evidenceBtn) {
+    elements.evidenceBtn.addEventListener("click", () => {
+      showToast("info", "Loading Evidence", "Gathering supporting data...")
+    })
+  }
 
   // Bulk action buttons
-  elements.approveAllBtn.addEventListener("click", () => {
-    approveAllActions()
-    showToast("success", "Bulk Approval", "All pending actions approved")
-  })
+  if (elements.approveAllBtn) {
+    elements.approveAllBtn.addEventListener("click", () => {
+      approveAllActions()
+      showToast("success", "Bulk Approval", "All pending actions approved")
+    })
+  }
 
-  elements.exportBtn.addEventListener("click", () => {
-    showToast("info", "Exporting", "Generating action report...")
-  })
+  if (elements.exportBtn) {
+    elements.exportBtn.addEventListener("click", () => {
+      showToast("info", "Exporting", "Generating action report...")
+    })
+  }
 
   // Threshold slider
   if (elements.thresholdInput) {
@@ -1467,19 +1682,59 @@ async function switchUseCase(useCase) {
 
 function clearAnalysisPanels() {
   // Hide all specific views and show default
-  elements.qualityIncidentView.style.display = "none"
-  elements.expansionOpportunityView.style.display = "none"
-  elements.defaultAnalysisView.style.display = "block"
+  if (elements.qualityIncidentView) {
+    elements.qualityIncidentView.style.display = "none"
+  }
+  if (elements.expansionOpportunityView) {
+    elements.expansionOpportunityView.style.display = "none"
+  }
+  // Hide QBR view
+  if (elements.qbrView) {
+    elements.qbrView.style.display = "none"
+  }
+  // Hide Churn view
+  const churnViewContainer = document.getElementById("churnView")
+  if (churnViewContainer) {
+    churnViewContainer.style.display = "none"
+  }
+  // Hide Supply view
+  const supplyViewContainer = document.getElementById("supplyView")
+  if (supplyViewContainer) {
+    supplyViewContainer.style.display = "none"
+  }
 
-  // Clear content of the default analysis view
-  elements.defaultAnalysisView.innerHTML =
-    '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Select an account to view details</div>'
+  if (elements.defaultAnalysisView) {
+    elements.defaultAnalysisView.style.display = "block"
+    // Clear content of the default analysis view
+    elements.defaultAnalysisView.innerHTML =
+      '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Select an account to view details</div>'
+  }
 
   // Clear content of default actions list and hide specific action containers
-  elements.actionsList.innerHTML =
-    '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
-  elements.qualityIncidentActions.style.display = "none"
-  elements.expansionOpportunityActions.style.display = "none"
+  if (elements.actionsList) {
+    elements.actionsList.innerHTML =
+      '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+  }
+  if (elements.qualityIncidentActions) {
+    elements.qualityIncidentActions.style.display = "none"
+  }
+  if (elements.expansionOpportunityActions) {
+    elements.expansionOpportunityActions.style.display = "none"
+  }
+  // Hide QBR actions container if it exists
+  if (elements.qbrActions) {
+    elements.qbrActions.style.display = "none"
+  }
+  // Hide Churn actions container
+  const churnActionsContainer = document.getElementById("churnActions")
+  if (churnActionsContainer) {
+    churnActionsContainer.style.display = "none"
+  }
+  // Hide Supply actions container
+  const supplyActionsContainer = document.getElementById("supplyActions")
+  if (supplyActionsContainer) {
+    supplyActionsContainer.style.display = "none"
+  }
 }
 
 // ========================================
@@ -1558,71 +1813,249 @@ function selectAlert(alertData) {
         } else {
           console.warn("[v0] Failed to fetch agent data, using cached or default data.")
         }
-        renderSpecificView(alertData) // Render the appropriate view after data fetch
+        renderSpecificView(alertData.useCase, alertData, alertData.detailedData) // Render the appropriate view after data fetch
       })
       .catch((error) => {
         console.error("[v0] Error during fetchAgentData in selectAlert:", error)
-        renderSpecificView(alertData) // Attempt to render with potentially partial data
+        renderSpecificView(alertData.useCase, alertData, alertData.detailedData) // Attempt to render with potentially partial data
       })
   } else {
-    renderSpecificView(alertData) // Render if no agentRunId or useCase
+    renderSpecificView(alertData.useCase, alertData, alertData.detailedData) // Render if no agentRunId or useCase
   }
 }
 
-function renderSpecificView(alertData) {
-  const { useCase, detailedData } = alertData
-
+// CHANGE: Hiding qbrActions when switching to other tabs
+function renderSpecificView(useCase, alertData, detailedData) {
   console.log("[v0] renderSpecificView called with useCase:", useCase)
   console.log("[v0] detailedData:", detailedData)
-  console.log("[v0] detailedData?.middle_panel:", detailedData?.middle_panel)
-  console.log("[v0] detailedData?.brief:", detailedData?.brief)
 
   // Get references to view containers
   const qualityViewContainer = elements.qualityIncidentView
   const expansionViewContainer = elements.expansionOpportunityView
-
+  const qbrViewContainer = document.getElementById("qbrView")
+  const churnViewContainer = document.getElementById("churnView")
+  const supplyViewContainer = document.getElementById("supplyView") // Get supply view container
   const defaultViewContainer = elements.defaultAnalysisView
 
   const qualityActionsContainer = elements.qualityIncidentActions
   const expansionActionsContainer = elements.expansionOpportunityActions
   const defaultActionsContainer = elements.actionsList
-
-  console.log("[v0] qualityViewContainer:", qualityViewContainer)
-  console.log("[v0] expansionViewContainer:", expansionViewContainer)
-  console.log("[v0] defaultViewContainer:", defaultViewContainer)
+  const qbrActionsContainer = document.getElementById("qbrActions")
+  const churnActionsContainer = document.getElementById("churnActions")
+  const supplyActionsContainer = document.getElementById("supplyActions") // Get supply actions container
 
   // Hide all specific views and actions first
-  qualityViewContainer.style.display = "none"
-  expansionViewContainer.style.display = "none"
-  defaultViewContainer.style.display = "block"
-  qualityActionsContainer.style.display = "none"
-  expansionActionsContainer.style.display = "none"
-  defaultActionsContainer.style.display = "block"
+  if (qualityViewContainer) qualityViewContainer.style.display = "none"
+  if (expansionViewContainer) expansionViewContainer.style.display = "none"
+  if (qbrViewContainer) qbrViewContainer.style.display = "none"
+  if (churnViewContainer) churnViewContainer.style.display = "none"
+  if (supplyViewContainer) supplyViewContainer.style.display = "none" // Hide supply view
+  if (defaultViewContainer) defaultViewContainer.style.display = "block"
+
+  if (qualityActionsContainer) qualityActionsContainer.style.display = "none"
+  if (expansionActionsContainer) expansionActionsContainer.style.display = "none"
+  if (qbrActionsContainer) qbrActionsContainer.style.display = "none"
+  if (churnActionsContainer) churnActionsContainer.style.display = "none"
+  if (supplyActionsContainer) supplyActionsContainer.style.display = "none" // Hide supply actions
+  if (defaultActionsContainer) defaultActionsContainer.style.display = "block"
 
   // Reset default view content
-  defaultViewContainer.innerHTML =
-    '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Select an account to view details</div>'
-  defaultActionsContainer.innerHTML =
-    '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+  if (defaultViewContainer) {
+    defaultViewContainer.innerHTML =
+      '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Select an account to view details</div>'
+  }
+  if (defaultActionsContainer) {
+    defaultActionsContainer.innerHTML =
+      '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+  }
 
   if (useCase === "quality_incident" && detailedData?.brief) {
     console.log("[v0] Rendering quality incident view")
-    qualityViewContainer.style.display = "block"
-    defaultViewContainer.style.display = "none"
-    qualityActionsContainer.style.display = "block"
-    defaultActionsContainer.style.display = "none"
+    if (qualityViewContainer) qualityViewContainer.style.display = "block"
+    if (defaultViewContainer) defaultViewContainer.style.display = "none"
+    if (qualityActionsContainer) qualityActionsContainer.style.display = "block"
+    if (defaultActionsContainer) defaultActionsContainer.style.display = "none"
     renderQualityIncidentView(detailedData, qualityViewContainer)
     renderQualityIncidentActions(detailedData, qualityActionsContainer)
   } else if (useCase === "expansion_opportunity" && detailedData?.middle_panel) {
     console.log("[v0] Rendering expansion opportunity view")
-    expansionViewContainer.style.display = "block"
-    defaultViewContainer.style.display = "none"
-    expansionActionsContainer.style.display = "block"
-    defaultActionsContainer.style.display = "none"
+    if (expansionViewContainer) expansionViewContainer.style.display = "block"
+    if (defaultViewContainer) defaultViewContainer.style.display = "none"
+    if (expansionActionsContainer) expansionActionsContainer.style.display = "block"
+    if (defaultActionsContainer) defaultActionsContainer.style.display = "none"
     renderExpansionOpportunityView(detailedData.middle_panel, expansionViewContainer)
     renderExpansionActions(detailedData.right_panel, expansionActionsContainer)
+  } else if (useCase === "qbr" || useCase === "qbr_auto_generation") {
+    console.log("[v0] Rendering QBR view")
+
+    let qbrViewContainer = document.getElementById("qbrView")
+    if (!qbrViewContainer) {
+      const analysisContent = document.getElementById("analysisContent")
+      if (analysisContent) {
+        qbrViewContainer = document.createElement("div")
+        qbrViewContainer.id = "qbrView"
+        qbrViewContainer.style.display = "none"
+        analysisContent.insertBefore(qbrViewContainer, analysisContent.firstChild)
+      }
+    }
+
+    let qbrActionsContainer = document.getElementById("qbrActions")
+    if (!qbrActionsContainer) {
+      const panelRight = document.querySelector(".panel-right")
+      if (panelRight) {
+        qbrActionsContainer = document.createElement("div")
+        qbrActionsContainer.id = "qbrActions"
+        qbrActionsContainer.style.display = "none"
+        panelRight.insertBefore(qbrActionsContainer, panelRight.firstChild)
+      }
+    }
+
+    console.log("[v0] qbrViewContainer:", qbrViewContainer)
+    console.log("[v0] qbrActionsContainer:", qbrActionsContainer)
+    console.log("[v0] qbrActionsContainer display:", qbrActionsContainer?.style.display)
+
+    if (qbrViewContainer) {
+      qbrViewContainer.style.display = "block"
+      if (defaultViewContainer) defaultViewContainer.style.display = "none"
+      if (qualityViewContainer) qualityViewContainer.style.display = "none"
+      if (expansionViewContainer) expansionViewContainer.style.display = "none"
+
+      if (qbrActionsContainer) {
+        console.log("[v0] Calling renderQBRActions with data")
+        qbrActionsContainer.style.display = "block"
+      }
+      if (qualityActionsContainer) qualityActionsContainer.style.display = "none"
+      if (expansionActionsContainer) expansionActionsContainer.style.display = "none"
+      if (defaultActionsContainer) defaultActionsContainer.style.display = "none"
+
+      renderQBRView(detailedData, qbrViewContainer)
+
+      if (qbrActionsContainer) {
+        console.log("[v0] Calling renderQBRActions with data")
+        renderQBRActions(detailedData, qbrActionsContainer)
+      } else {
+        console.error("[v0] qbrActionsContainer is null after creation attempt")
+      }
+    }
+  } else if (useCase === "churn_risk" || useCase === "churn") {
+    console.log("[v0] Rendering Churn view")
+
+    if (!detailedData || !detailedData.risk_summary) {
+      console.warn("[v0] No churn data available, showing default view")
+      if (defaultViewContainer) {
+        defaultViewContainer.innerHTML =
+          '<div style="padding: 2rem; text-align: center; color: #94a3b8;">No churn risk data available for this account</div>'
+        defaultViewContainer.style.display = "block"
+      }
+      if (defaultActionsContainer) {
+        defaultActionsContainer.innerHTML =
+          '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+        defaultActionsContainer.style.display = "block"
+      }
+      return
+    }
+
+    let churnViewContainer = document.getElementById("churnView")
+    if (!churnViewContainer) {
+      const analysisContent = document.getElementById("analysisContent")
+      if (analysisContent) {
+        churnViewContainer = document.createElement("div")
+        churnViewContainer.id = "churnView"
+        churnViewContainer.style.display = "none"
+        analysisContent.insertBefore(churnViewContainer, analysisContent.firstChild)
+      }
+    }
+
+    let churnActionsContainer = document.getElementById("churnActions")
+    if (!churnActionsContainer) {
+      const panelRight = document.querySelector(".panel-right")
+      if (panelRight) {
+        churnActionsContainer = document.createElement("div")
+        churnActionsContainer.id = "churnActions"
+        churnActionsContainer.style.display = "none"
+        panelRight.insertBefore(churnActionsContainer, panelRight.firstChild)
+      }
+    }
+
+    if (churnViewContainer) {
+      churnViewContainer.style.display = "block"
+      if (defaultViewContainer) defaultViewContainer.style.display = "none"
+      if (qualityViewContainer) qualityViewContainer.style.display = "none"
+      if (expansionViewContainer) expansionViewContainer.style.display = "none"
+      if (qbrViewContainer) qbrViewContainer.style.display = "none"
+
+      if (churnActionsContainer) {
+        churnActionsContainer.style.display = "block"
+      }
+      if (qualityActionsContainer) qualityActionsContainer.style.display = "none"
+      if (expansionActionsContainer) expansionActionsContainer.style.display = "none"
+      if (qbrActionsContainer) qbrActionsContainer.style.display = "none"
+      if (defaultActionsContainer) defaultActionsContainer.style.display = "none"
+
+      renderChurnView(detailedData, churnViewContainer)
+      renderChurnActions(churnActionsContainer, detailedData, alertData)
+    }
+  } else if (useCase === "supply_risk" || useCase === "supply") {
+    console.log("[v0] Rendering Supply view")
+
+    if (!detailedData || !detailedData.risk_summary) {
+      console.warn("[v0] No supply data available, showing default view")
+      if (defaultViewContainer) {
+        defaultViewContainer.innerHTML =
+          '<div style="padding: 2rem; text-align: center; color: #94a3b8;">No supply risk data available for this account</div>'
+        defaultViewContainer.style.display = "block"
+      }
+      if (defaultActionsContainer) {
+        defaultActionsContainer.innerHTML =
+          '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No actions available</div>'
+        defaultActionsContainer.style.display = "block"
+      }
+      return
+    }
+
+    let supplyViewContainer = document.getElementById("supplyView")
+    if (!supplyViewContainer) {
+      const analysisContent = document.getElementById("analysisContent")
+      if (analysisContent) {
+        supplyViewContainer = document.createElement("div")
+        supplyViewContainer.id = "supplyView"
+        supplyViewContainer.style.display = "none"
+        analysisContent.insertBefore(supplyViewContainer, analysisContent.firstChild)
+      }
+    }
+
+    let supplyActionsContainer = document.getElementById("supplyActions")
+    if (!supplyActionsContainer) {
+      const panelRight = document.querySelector(".panel-right")
+      if (panelRight) {
+        supplyActionsContainer = document.createElement("div")
+        supplyActionsContainer.id = "supplyActions"
+        supplyActionsContainer.style.display = "none"
+        panelRight.insertBefore(supplyActionsContainer, panelRight.firstChild)
+      }
+    }
+
+    if (supplyViewContainer) {
+      supplyViewContainer.style.display = "block"
+      if (defaultViewContainer) defaultViewContainer.style.display = "none"
+      if (qualityViewContainer) qualityViewContainer.style.display = "none"
+      if (expansionViewContainer) expansionViewContainer.style.display = "none"
+      if (qbrViewContainer) qbrViewContainer.style.display = "none"
+      if (churnViewContainer) churnViewContainer.style.display = "none"
+
+      if (supplyActionsContainer) {
+        supplyActionsContainer.style.display = "block"
+        if (defaultActionsContainer) defaultActionsContainer.style.display = "none"
+        if (qualityActionsContainer) qualityActionsContainer.style.display = "none"
+        if (expansionActionsContainer) expansionActionsContainer.style.display = "none"
+        if (qbrActionsContainer) qbrActionsContainer.style.display = "none"
+        if (churnActionsContainer) churnActionsContainer.style.display = "none"
+      }
+
+      renderSupplyView(detailedData, supplyViewContainer)
+      renderSupplyActions(supplyActionsContainer, detailedData, alertData)
+    }
   } else if (alertData.analysis) {
-    // Fallback to the default detailed analysis view
     console.log("[v0] Rendering default analysis view")
     renderAnalysis(alertData.analysis)
     renderActions(alertData.actions)
@@ -1685,6 +2118,7 @@ function renderAnalysis(analysis) {
 }
 
 function renderQualityIncidentView(data, container) {
+  console.log("[v0] renderQualityIncidentView called")
   container.innerHTML = `
     <div class="quality-incident-view">
       <!-- Executive Summary -->
@@ -1800,7 +2234,6 @@ function renderQualityIncidentView(data, container) {
   `
 
   // Render the chart after DOM update
-  // Use setTimeout to ensure the canvas element is in the DOM and has dimensions
   setTimeout(() => renderIncidentTrendChart(data.rca.trends.daily_counts), 100)
 }
 
@@ -1979,7 +2412,7 @@ function startTypingAnimation(alert) {
   })
 }
 
-let currentTypingId = 0
+let currentTypingId = 0 // Initialize currentTypingId
 
 function typeText(text, element, speed, callback) {
   currentTypingId++
@@ -2359,7 +2792,7 @@ function updatePreview() {
     churn: "Churn Prevention",
     quality: "Quality Incidents", // Updated label for Quality Incidents
     qbr: "QBR Auto-Generation", // Added label for QBR
-    supply: "Supply Chain",
+    supply: "Supply Chain", // Added label for Supply Chain
   }
 
   document.getElementById("previewName").textContent = name || "New Agent"
@@ -2631,7 +3064,7 @@ function renderQualityIncidentActions(data, container) {
           <div class="qi-task-item" data-task-index="${index}">
             <div class="qi-task-header">
               <span class="qi-task-number">${index + 1}</span>
-              <input type="text" class="qi-task-title-input" value="${action.title || action}" />
+              <input type="text" class="qi-task-title-input" value="${action.title || ""}" />
             </div>
             <textarea class="qi-task-description" rows="2" placeholder="Add task description...">${action.description || ""}</textarea>
           </div>
@@ -3059,10 +3492,10 @@ function renderExpansionActions(rightPanel, container) {
     }
   }, 100)
 
-  const { actions = [], deck = {} } = rightPanel
+  const { actions = [], deck = {} } = rightPanel || {}
 
   // Check if there's actual data to display
-  if (!actions || actions.length === 0 || !deck || !deck.slides) {
+  if (!actions || actions.length === 0) {
     container.innerHTML = '<div class="empty-state">No actions or deck available</div>'
     return
   }
@@ -3075,15 +3508,6 @@ function renderExpansionActions(rightPanel, container) {
   html += '<span class="eo-action-title">Log CRM Task</span>'
   html += "</div>"
 
-  // Group actions by type
-  const actionsByType = {}
-  actions.forEach((action) => {
-    if (!actionsByType[action.type]) {
-      actionsByType[action.type] = []
-    }
-    actionsByType[action.type].push(action)
-  })
-
   const typeLabels = {
     meeting: "📅 Schedule Review Meeting",
     task: "✅ Create Action Plan",
@@ -3091,22 +3515,20 @@ function renderExpansionActions(rightPanel, container) {
   }
 
   html += '<div class="eo-task-list">'
-  Object.entries(actionsByType).forEach(([type, typeActions]) => {
-    typeActions.forEach((action) => {
-      const priorityClass = `priority-${action.priority}`
-      html += `
-        <div class="eo-task-item ${priorityClass}">
-          <div class="eo-task-priority">P${action.priority}</div>
-          <div class="eo-task-content">
-            <div class="eo-task-type">${typeLabels[type] || type}</div>
-            <div class="eo-task-rationale">${action.rationale || ""}</div>
-          </div>
-          <button class="eo-task-btn" onclick="logCRMTask('${type}', ${JSON.stringify(action).replace(/"/g, "&quot;")})">
-            Log Task
-          </button>
+  actions.forEach((action) => {
+    const priorityClass = `priority-${action.priority}`
+    html += `
+      <div class="eo-task-item ${priorityClass}">
+        <div class="eo-task-priority">P${action.priority}</div>
+        <div class="eo-task-content">
+          <div class="eo-task-type">${typeLabels[action.type] || action.type || "Task"}</div>
+          <div class="eo-task-rationale">${action.rationale || ""}</div>
         </div>
-      `
-    })
+        <button class="eo-task-btn" onclick="logCRMTask('${action.type}', ${JSON.stringify(action).replace(/"/g, "&quot;")})">
+          Log Task
+        </button>
+      </div>
+    `
   })
   html += "</div>"
   html += "</div>"
@@ -3125,7 +3547,7 @@ function renderExpansionActions(rightPanel, container) {
       html += `
         <div class="eo-slide-item">
           <span class="eo-slide-number">${index + 1}</span>
-          <span class="eo-slide-title">${slide.title || "Slide " + (index + 1)}</span>
+          <span class="eo-slide-title">${slide.slide_title || slide.title || "Slide " + (index + 1)}</span>
         </div>
       `
     })
@@ -3164,7 +3586,7 @@ function logCRMTask(actionType, actionData) {
   fetch(`${API_CONFIG.baseUrl}/agent/action/create-crm-task`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.JSON.stringify(payload),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -3203,6 +3625,921 @@ function downloadExpansionDeck(deckTitle, deckData) {
     .catch((error) => {
       console.error("[v0] Error downloading deck:", error)
       showToast("error", "Failed to Download Deck", "Please check console for details.")
+    })
+}
+
+// RENDER QBR ACTIONS - START
+function renderQBRActions(data, container) {
+  console.log("[v0] renderQBRActions called with data:", data)
+  console.log("[v0] Container:", container)
+
+  const actions = data?.actions || []
+  const deck = data?.deck || {}
+  const talkingPoints = data?.talking_points || []
+
+  console.log("[v0] Actions:", actions)
+  console.log("[v0] Deck:", deck)
+  console.log("[v0] Talking Points:", talkingPoints)
+
+  let html = `<div class="qbr-actions-container">`
+
+  if (actions.length > 0) {
+    html += `
+      <div class="eo-action-card">
+        <div class="eo-action-header">
+          <span class="eo-action-title">Log CRM Task</span>
+        </div>
+        <div class="eo-action-list">
+          ${actions
+            .map(
+              (action) => `
+            <div class="eo-action-item">
+              <div class="eo-action-priority ${action.priority || "medium"}">
+                <span class="eo-priority-badge">${action.priority?.toUpperCase() || "MEDIUM"}</span>
+              </div>
+              <div class="eo-action-content">
+                <div class="eo-action-type">
+                  <span class="eo-type-icon">${action.type === "meeting" ? "📅" : action.type === "email" ? "📧" : "✅"}</span>
+                  <span class="eo-action-name">${action.title || action.type || "Task"}</span>
+                </div>
+                <div class="eo-action-description">${action.description || ""}</div>
+              </div>
+              <button class="eo-action-btn" onclick="logCRMTask('${action.type}', ${JSON.stringify(action).replace(/"/g, "&quot;")})">Log Task</button>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `
+  }
+
+  if (deck.slides && deck.slides.length > 0) {
+    html += `
+      <div class="eo-action-card">
+        <div class="eo-action-header">
+          <span class="eo-action-title">${deck.deck_title || "QBR Deck"}</span>
+        </div>
+        <div class="eo-deck-preview">
+          <div class="eo-deck-title">${deck.subtitle || "QBR - " + (state.selectedAlert?.accountName || "Account")}</div>
+          <div class="eo-slides-list">
+            ${deck.slides
+              .map(
+                (slide, index) => `
+              <div class="eo-slide-item">
+                <span class="eo-slide-number">${index + 1}</span>
+                <span class="eo-slide-title">${slide.slide_title || slide.title || "Slide " + (index + 1)}</span>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+          <div class="eo-deck-actions">
+            <button class="eo-deck-btn" onclick="downloadQBRDeck('${deck.deck_title}', ${JSON.stringify(deck).replace(/"/g, "&quot;")})">Download Deck</button>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  if (talkingPoints.length > 0) {
+    html += `
+      <div class="eo-action-card">
+        <div class="eo-action-header">
+          <span class="eo-action-title">Talking Points</span>
+        </div>
+        <ul class="qbr-talking-points-list">
+          ${talkingPoints.map((point) => `<li><span class="qbr-talking-point-icon">💡</span>${point}</li>`).join("")}
+        </ul>
+      </div>
+    `
+  }
+
+  html += `</div>`
+
+  console.log("[v0] Setting innerHTML for qbrActions container")
+  container.innerHTML = html
+  console.log("[v0] renderQBRActions complete")
+}
+// RENDER QBR ACTIONS - END
+
+// ADDED FUNCTION: renderQBRView
+function renderQBRView(data, container) {
+  console.log("[v0] renderQBRView called with data:", data)
+  console.log("[v0] renderQBRView container:", container)
+
+  if (!container) {
+    console.error("[v0] renderQBRView: container is null, cannot render QBR view")
+    return
+  }
+
+  const trends = data?.trends || {}
+  const rootCauses = data?.root_causes || []
+  const brief = data?.brief || {}
+  const opportunities = data?.opportunities || []
+  const signals = data?.signals || {}
+
+  const html = `
+    <div class="qbr-view">
+      <!-- RCA & Trends Section -->
+      <div class="qbr-section">
+        <h3 class="qbr-section-title">
+          <span class="qbr-icon">📊</span>
+          RCA & Trends
+        </h3>
+        <div class="qbr-metrics-grid">
+          <div class="qbr-metric-card">
+            <div class="qbr-metric-label">Orders</div>
+            <div class="qbr-metric-value">${trends.orders || "N/A"}</div>
+          </div>
+          <div class="qbr-metric-card">
+            <div class="qbr-metric-label">Usage</div>
+            <div class="qbr-metric-value">${trends.usage || "N/A"}</div>
+          </div>
+          <div class="qbr-metric-card">
+            <div class="qbr-metric-label">Quality</div>
+            <div class="qbr-metric-value">${trends.quality || "N/A"}</div>
+          </div>
+          <div class="qbr-metric-card">
+            <div class="qbr-metric-label">Tickets</div>
+            <div class="qbr-metric-value">${trends.tickets || "N/A"}</div>
+          </div>
+        </div>
+
+        ${
+          rootCauses.length > 0
+            ? `
+          <div class="qbr-root-causes">
+            <h4 class="qbr-subsection-title">Root Causes</h4>
+            <div class="qbr-root-causes-list">
+              ${rootCauses
+                .map(
+                  (cause) => `
+                <div class="qbr-root-cause-item">
+                  <div class="qbr-cause-header">
+                    <span class="qbr-cause-issue">${cause.issue || "N/A"}</span>
+                    <span class="qbr-cause-confidence">${((cause.confidence || 0) * 100).toFixed(0)}% confidence</span>
+                  </div>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          signals?.wins?.length > 0
+            ? `
+          <div class="qbr-signals">
+            <h4 class="qbr-subsection-title">Key Signals</h4>
+            <div class="qbr-signals-list">
+              ${signals.wins
+                .map(
+                  (signal) => `
+                <div class="qbr-signal-item">
+                  <span class="qbr-signal-type">${signal.signal_type || "N/A"}</span>
+                  <span class="qbr-signal-strength">${signal.strength || "N/A"}</span>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+            : ""
+        }
+      </div>
+
+      <!-- Executive Summary -->
+      <div class="qbr-section">
+        <h3 class="qbr-section-title">
+          <span class="qbr-icon">📝</span>
+          Executive Summary
+        </h3>
+        <p class="qbr-summary-text">${brief.executive_summary || "No summary available"}</p>
+
+        ${
+          brief.key_risks?.length > 0
+            ? `
+          <div class="qbr-brief-subsection">
+            <h4 class="qbr-subsection-title">Key Risks</h4>
+            <ul class="qbr-brief-list">
+              ${brief.key_risks.map((risk) => `<li>${risk}</li>`).join("")}
+            </ul>
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          brief.opportunities_summary?.length > 0
+            ? `
+          <div class="qbr-brief-subsection">
+            <h4 class="qbr-subsection-title">Opportunities Summary</h4>
+            <ul class="qbr-brief-list">
+              ${brief.opportunities_summary.map((opp) => `<li>${opp}</li>`).join("")}
+            </ul>
+          </div>
+        `
+            : ""
+        }
+      </div>
+
+      <!-- Revenue Opportunities -->
+      ${
+        opportunities.length > 0
+          ? `
+        <div class="qbr-section">
+          <h3 class="qbr-section-title">
+            <span class="qbr-icon">💰</span>
+            Revenue Opportunities
+          </h3>
+          <div class="qbr-opportunities-grid">
+            ${opportunities
+              .map(
+                (opp) => `
+              <div class="qbr-opportunity-card">
+                <div class="qbr-opp-type">${opp.type || "N/A"}</div>
+                <div class="qbr-opp-description">${opp.description || ""}</div>
+                <div class="qbr-opp-value">${new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                }).format(opp.estimated_value || 0)}</div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+        </div>
+      `
+          : ""
+      }
+    </div>
+  `
+
+  container.innerHTML = html
+}
+
+// ADDED FUNCTION: downloadQBRDeck
+function downloadQBRDeck(deckTitle, deckData) {
+  console.log("[v0] Downloading QBR deck:", deckTitle)
+  const payload = {
+    ...deckData,
+    deck_title: deckTitle,
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+  }
+  fetch(`${API_CONFIG.baseUrl}/agent/action/download-deck`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.blob())
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${deckTitle.replace(/\s+/g, "-")}.pdf`
+      a.click()
+      showToast("success", "QBR Deck Downloaded", "Your QBR deck has been generated.")
+    })
+    .catch((error) => {
+      console.error("[v0] Error downloading QBR deck:", error)
+      showToast("error", "Failed to Download Deck", "Please check console for details.")
+    })
+}
+
+// ADDED FUNCTION: renderChurnView
+function renderChurnView(data, container) {
+  if (!container) {
+    console.error("[v0] renderChurnView: container is null")
+    return
+  }
+
+  const { commercial_brief = {}, detected_root_causes = [], risk_summary = {} } = data || {}
+
+  const brief = commercial_brief || {}
+  const rootCauses = detected_root_causes || []
+  const risk = risk_summary || {}
+
+  const html = `
+    <div class="churn-view">
+      <!-- Risk Summary Section -->
+      <div class="churn-risk-summary">
+        <div class="risk-header">
+          <div class="risk-level risk-${risk.risk_level?.toLowerCase() || "medium"}">
+            <span class="risk-icon">⚠️</span>
+            <span class="risk-label">${risk.risk_level?.toUpperCase() || "MEDIUM"} RISK</span>
+          </div>
+          <div class="risk-confidence">
+            Confidence: ${Math.round((Number.parseFloat(risk.confidence_score) || 0) * 100)}%
+          </div>
+        </div>
+        <div class="risk-impact">
+          <div class="impact-label">SUMMARY</div>
+          <div class="impact-text">${risk.executive_summary || "No summary available"}</div>
+        </div>
+        ${
+          risk.estimated_impact
+            ? `
+        <div class="risk-impact">
+          <div class="impact-label">ESTIMATED IMPACT</div>
+          <div class="impact-text">${risk.estimated_impact}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          risk.primary_driver
+            ? `
+        <div class="risk-driver">
+          <div class="driver-label">PRIMARY DRIVER</div>
+          <div class="driver-text">${risk.primary_driver}</div>
+        </div>
+        `
+            : ""
+        }
+      </div>
+
+      <!-- Root Causes Section -->
+      ${
+        rootCauses.length > 0
+          ? `
+      <div class="churn-section">
+        <h3 class="churn-section-title">
+          <span class="section-icon">🔍</span>
+          Detected Root Causes
+        </h3>
+        <div class="root-causes-list">
+          ${rootCauses
+            .map(
+              (rc) => `
+            <div class="root-cause-item">
+              <div class="root-cause-content">
+                <div class="root-cause-text">${rc.cause}</div>
+                <div class="confidence-badge">
+                  ${Math.round((rc.confidence || 0) * 100)}% confidence
+                </div>
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+      `
+          : ""
+      }
+
+      <!-- Commercial Brief Section -->
+      ${
+        brief.title
+          ? `
+      <div class="churn-section">
+        <h3 class="churn-section-title">
+          <span class="section-icon">📊</span>
+          ${brief.title || "Commercial Brief"}
+        </h3>
+        <div class="commercial-brief-content">
+          ${
+            brief.executive_summary
+              ? `
+          <div class="brief-item">
+            <div class="brief-label">Executive Summary</div>
+            <div class="brief-text">${brief.executive_summary}</div>
+          </div>
+          `
+              : ""
+          }
+          ${
+            brief.key_drivers && brief.key_drivers.length > 0
+              ? `
+          <div class="brief-item">
+            <div class="brief-label">Key Drivers</div>
+            <ul class="brief-list">
+              ${brief.key_drivers.map((driver) => `<li>${driver}</li>`).join("")}
+            </ul>
+          </div>
+          `
+              : ""
+          }
+          ${
+            brief.recommended_focus
+              ? `
+          <div class="brief-item">
+            <div class="brief-label">Recommended Focus</div>
+            <div class="brief-text">${brief.recommended_focus}</div>
+          </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+      `
+          : ""
+      }
+    </div>
+  `
+
+  container.innerHTML = html
+}
+
+// ADDED FUNCTION: renderChurnActions
+function renderChurnActions(container, data, alertData) {
+  console.log("[v0] renderChurnActions called")
+  console.log("[v0] Container:", container)
+  console.log("[v0] Data:", data)
+  console.log("[v0] AlertData:", alertData)
+
+  if (!container) {
+    console.error("[v0] renderChurnActions: container is null")
+    return
+  }
+
+  if (!data) {
+    console.warn("[v0] renderChurnActions: no data provided")
+    container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No data available</div>'
+    return
+  }
+
+  const actions = data.actions || []
+  const emailDraft = data.email_draft || {}
+
+  let html = '<div class="churn-actions-container">'
+
+  // Action 1: Email Draft
+  if (emailDraft && (emailDraft.subject || emailDraft.body_text)) {
+    const customerEmail = alertData?.company ? `${alertData.company.toLowerCase().replace(/\s+/g, "")}@company.com` : ""
+    // Clean up escaped quotes from the API response
+    const cleanValue = (val) => (val ? val.replace(/^"|"$/g, "").replace(/\\"/g, '"') : "")
+    const emailTo = cleanValue(emailDraft.to) || customerEmail || "customer@company.com"
+    const emailSubject = cleanValue(emailDraft.subject) || ""
+    const emailBody = cleanValue(emailDraft.body_text) || ""
+
+    html += `
+      <div class="churn-action-card">
+        <div class="churn-action-header">
+          <h3 class="churn-action-title">Send Retention Email</h3>
+        </div>
+        <div class="churn-email-editor">
+          <div class="churn-email-field">
+            <label>To:</label>
+            <input type="text" class="churn-email-input" value="${emailTo}" data-field="to" />
+          </div>
+          <div class="churn-email-field">
+            <label>Subject:</label>
+            <input type="text" class="churn-email-input" value="${emailSubject}" data-field="subject" />
+          </div>
+          <div class="churn-email-field">
+            <label>Body:</label>
+            <textarea class="churn-email-textarea" rows="8" data-field="body">${emailBody}</textarea>
+          </div>
+        </div>
+        <div class="churn-action-buttons">
+          <button class="churn-btn churn-btn-secondary" onclick="editChurnEmail(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="churn-btn churn-btn-primary" onclick="sendChurnEmail(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send
+          </button>
+        </div>
+        <button class="churn-btn churn-btn-ghost" onclick="saveChurnDraft(this)" style="margin-top: 8px;">Save Draft</button>
+      </div>
+    `
+  }
+
+  // Action 2: Retention Actions with fixed layout
+  if (actions && actions.length > 0) {
+    html += `
+      <div class="churn-action-card">
+        <div class="churn-action-header">
+          <h3 class="churn-action-title">Retention Actions</h3>
+        </div>
+        <div class="churn-actions-list">
+    `
+
+    actions.forEach((action, index) => {
+      const priorityClass = action.priority ? `priority-${action.priority.toLowerCase()}` : "priority-medium"
+      const priorityLabel = action.priority || "Medium"
+      const actionTitle = action.title || action.action || "Action"
+      const actionDesc = action.description || action.rationale || ""
+      const dueDate = action.due_date || "" // Use due_date if available, otherwise leave empty
+
+      html += `
+        <div class="churn-action-item">
+          <div class="churn-action-content">
+            <span class="churn-priority-badge ${priorityClass}">${priorityLabel.toUpperCase()}</span>
+            <h4 class="churn-action-item-title">${actionTitle}</h4>
+            <p class="churn-action-description">${actionDesc}</p>
+            ${dueDate ? `<span class="churn-due-date">Due: ${dueDate}</span>` : ""}
+          </div>
+          <button class="churn-btn churn-btn-primary churn-btn-task" onclick="logChurnTask(${index}, ${JSON.stringify(action).replace(/"/g, "&quot;")})">
+            Log Task
+          </button>
+        </div>
+      `
+    })
+
+    html += `
+        </div>
+      </div>
+    `
+  }
+
+  html += "</div>"
+
+  console.log("[v0] Setting innerHTML with", html.length, "characters")
+  container.innerHTML = html
+  console.log("[v0] innerHTML set successfully")
+}
+
+// Email action handlers for Churn
+function editChurnEmail(button) {
+  const card = button.closest(".churn-action-card")
+  const inputs = card.querySelectorAll(".churn-email-input, .churn-email-textarea")
+
+  inputs.forEach((input) => {
+    input.disabled = false
+    input.focus()
+  })
+
+  showToast("info", "Edit Mode", "You can now edit the email fields")
+}
+
+function sendChurnEmail(button) {
+  const card = button.closest(".churn-action-card")
+  const to = card.querySelector('[data-field="to"]').value
+  const subject = card.querySelector('[data-field="subject"]').value
+  const body = card.querySelector('[data-field="body"]').value
+
+  console.log("[v0] Sending churn email:", { to, subject, body })
+
+  // TODO: Implement actual email sending
+  showToast("success", "Email Sent", `Retention email sent to ${to}`)
+}
+
+function saveChurnDraft(button) {
+  const card = button.closest(".churn-action-card")
+  const to = card.querySelector('[data-field="to"]').value
+  const subject = card.querySelector('[data-field="subject"]').value
+  const body = card.querySelector('[data-field="body"]').value
+
+  console.log("[v0] Saving churn email draft:", { to, subject, body })
+
+  showToast("success", "Draft Saved", "Email draft saved successfully")
+}
+
+function logChurnTask(index, actionData) {
+  console.log("[v0] Logging churn task:", index, actionData)
+
+  // Prepare payload matching the create-crm-task structure
+  const payload = {
+    account_id: state.selectedAlert?.id, // Use selectedAlert.id for account ID
+    agent_run_id: state.selectedAlert?.agentRunId, // Use selectedAlert.agentRunId
+    tasks: [
+      {
+        title: actionData.title || actionData.action || "Retention Task",
+        description: actionData.description || actionData.rationale || "",
+      },
+    ],
+  }
+
+  console.log("[v0] Sending task payload:", payload)
+
+  // TODO: Implement actual API call
+  fetch(`${API_CONFIG.baseUrl}/agent/action/create-crm-task`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] Task logged successfully:", data)
+      showToast("success", "Task Logged", "Retention task logged to CRM")
+    })
+    .catch((error) => {
+      console.error("[v0] Error logging task:", error)
+      showToast("error", "Failed to Log Task", "Please check console for details.")
+    })
+}
+
+// ADDED FUNCTION: renderSupplyView
+function renderSupplyView(data, container) {
+  if (!container) {
+    console.error("[v0] renderSupplyView: container is null")
+    return
+  }
+
+  const { risk_summary = {}, detected_root_causes = [], commercial_brief = {} } = data || {}
+
+  const riskLevel = risk_summary.risk_level || "Medium"
+  const confidenceScore = Math.round((risk_summary.confidence_score || 0.5) * 100)
+  const executiveSummary = risk_summary.executive_summary || "No summary available"
+  const estimatedImpact = risk_summary.estimated_impact || ""
+  const primaryDriver = risk_summary.primary_driver || ""
+
+  const html = `
+    <div class="churn-view">
+      <!-- Risk Summary Section -->
+      <div class="churn-risk-summary">
+        <div class="risk-header">
+          <div class="risk-level risk-${riskLevel.toLowerCase()}">
+            <span class="risk-icon">⚠️</span>
+            <span class="risk-label">${riskLevel.toUpperCase()} RISK</span>
+          </div>
+          <div class="risk-confidence">
+            Score: ${confidenceScore}%
+          </div>
+        </div>
+        <div class="risk-impact">
+          <div class="impact-label">SUMMARY</div>
+          <div class="impact-text">${executiveSummary}</div>
+        </div>
+        ${
+          estimatedImpact
+            ? `
+        <div class="risk-impact">
+          <div class="impact-label">ESTIMATED IMPACT</div>
+          <div class="impact-text">${estimatedImpact}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          primaryDriver
+            ? `
+        <div class="risk-driver">
+          <div class="driver-label">PRIMARY DRIVER</div>
+          <div class="driver-text">${primaryDriver}</div>
+        </div>
+        `
+            : ""
+        }
+      </div>
+
+      <!-- Root Causes Section -->
+      ${
+        detected_root_causes.length > 0
+          ? `
+      <div class="churn-section">
+        <h3 class="churn-section-title">
+          <span class="section-icon">🔍</span>
+          Detected Root Causes
+        </h3>
+        <div class="root-causes-list">
+          ${detected_root_causes
+            .map(
+              (cause) => `
+            <div class="root-cause-item">
+              <div class="root-cause-content">
+                <div class="root-cause-text">${cause.cause}</div>
+                <div class="confidence-badge">
+                  ${Math.round((cause.confidence || 0) * 100)}% confidence
+                </div>
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+      `
+          : ""
+      }
+
+      <!-- Commercial Brief Section -->
+      ${
+        commercial_brief.title
+          ? `
+      <div class="churn-section">
+        <h3 class="churn-section-title">
+          <span class="section-icon">📊</span>
+          ${commercial_brief.title || "Commercial Brief"}
+        </h3>
+        <div class="commercial-brief-content">
+          ${
+            commercial_brief.executive_summary
+              ? `
+          <div class="brief-item">
+            <div class="brief-label">Executive Summary</div>
+            <div class="brief-text">${commercial_brief.executive_summary}</div>
+          </div>
+          `
+              : ""
+          }
+          ${
+            commercial_brief.key_drivers && commercial_brief.key_drivers.length > 0
+              ? `
+          <div class="brief-item">
+            <div class="brief-label">Key Drivers</div>
+            <ul class="brief-list">
+              ${commercial_brief.key_drivers.map((driver) => `<li>${driver}</li>`).join("")}
+            </ul>
+          </div>
+          `
+              : ""
+          }
+          ${
+            commercial_brief.recommended_focus
+              ? `
+          <div class="brief-item">
+            <div class="brief-label">Recommended Focus</div>
+            <div class="brief-text">${commercial_brief.recommended_focus}</div>
+          </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+      `
+          : ""
+      }
+    </div>
+  `
+
+  container.innerHTML = html
+}
+
+// ADDED FUNCTION: renderSupplyActions
+function renderSupplyActions(container, data, alertData) {
+  console.log("[v0] renderSupplyActions called")
+  console.log("[v0] Container:", container)
+  console.log("[v0] Data:", data)
+  console.log("[v0] AlertData:", alertData)
+
+  if (!container) {
+    console.error("[v0] renderSupplyActions: container is null")
+    return
+  }
+
+  if (!data) {
+    console.warn("[v0] renderSupplyActions: no data provided")
+    container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #94a3b8;">No data available</div>'
+    return
+  }
+
+  const actions = data.actions || []
+  const email = data.email || {}
+
+  let html = '<div class="churn-actions-container">'
+
+  // Action 1: Email Draft
+  if (email && (email.subject || email.body_text)) {
+    const customerEmail = alertData?.company ? `${alertData.company.toLowerCase().replace(/\s+/g, "")}@company.com` : ""
+    const cleanValue = (val) => (val ? val.replace(/^"|"$/g, "").replace(/\\"/g, '"') : "")
+    const emailTo = cleanValue(email.to) || customerEmail || "customer@company.com"
+    const emailSubject = cleanValue(email.subject) || ""
+    const emailBody = cleanValue(email.body_text) || ""
+
+    html += `
+      <div class="churn-action-card">
+        <div class="churn-action-header">
+          <h3 class="churn-action-title">Send Supply Alert Email</h3>
+        </div>
+        <div class="churn-email-editor">
+          <div class="churn-email-field">
+            <label>To:</label>
+            <input type="text" class="churn-email-input" value="${emailTo}" data-field="to" />
+          </div>
+          <div class="churn-email-field">
+            <label>Subject:</label>
+            <input type="text" class="churn-email-input" value="${emailSubject}" data-field="subject" />
+          </div>
+          <div class="churn-email-field">
+            <label>Body:</label>
+            <textarea class="churn-email-textarea" rows="8" data-field="body">${emailBody}</textarea>
+          </div>
+        </div>
+        <div class="churn-action-buttons">
+          <button class="churn-btn churn-btn-secondary" onclick="editSupplyEmail(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="churn-btn churn-btn-primary" onclick="sendSupplyEmail(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send
+          </button>
+        </div>
+        <button class="churn-btn churn-btn-ghost" onclick="saveSupplyDraft(this)" style="margin-top: 8px;">Save Draft</button>
+      </div>
+    `
+  }
+
+  // Action 2: Supply Actions
+  if (actions && actions.length > 0) {
+    html += `
+      <div class="churn-action-card">
+        <div class="churn-action-header">
+          <h3 class="churn-action-title">Supply Chain Actions</h3>
+        </div>
+        <div class="churn-actions-list">
+    `
+
+    actions.forEach((action, index) => {
+      const priorityClass = action.priority ? `priority-${action.priority.toLowerCase()}` : "priority-medium"
+      const priorityLabel = action.priority || "Medium"
+      const actionTitle = action.title || action.action || "Action"
+      const actionDesc = action.description || action.owner || ""
+      const dueDate = action.due_date || ""
+
+      html += `
+        <div class="churn-action-item">
+          <div class="churn-action-content">
+            <span class="churn-priority-badge ${priorityClass}">${priorityLabel.toUpperCase()}</span>
+            <h4 class="churn-action-item-title">${actionTitle}</h4>
+            ${actionDesc ? `<p class="churn-action-description">${actionDesc}</p>` : ""}
+            ${dueDate ? `<span class="churn-due-date">Due: ${dueDate}</span>` : ""}
+          </div>
+          <button class="churn-btn churn-btn-primary churn-btn-task" onclick="logSupplyTask(${index}, ${JSON.stringify(action).replace(/"/g, "&quot;")})">
+            Log Task
+          </button>
+        </div>
+      `
+    })
+
+    html += `
+        </div>
+      </div>
+    `
+  }
+
+  html += "</div>"
+
+  console.log("[v0] Setting innerHTML for supplyActions container")
+  container.innerHTML = html
+  console.log("[v0] renderSupplyActions complete")
+}
+
+// Email action handlers for Supply
+function editSupplyEmail(button) {
+  const card = button.closest(".churn-action-card")
+  const inputs = card.querySelectorAll(".churn-email-input, .churn-email-textarea")
+
+  inputs.forEach((input) => {
+    input.disabled = false
+    input.focus()
+  })
+
+  showToast("info", "Edit Mode", "You can now edit the email fields")
+}
+
+function sendSupplyEmail(button) {
+  const card = button.closest(".churn-action-card")
+  const to = card.querySelector('[data-field="to"]').value
+  const subject = card.querySelector('[data-field="subject"]').value
+  const body = card.querySelector('[data-field="body"]').value
+
+  console.log("[v0] Sending supply email:", { to, subject, body })
+
+  showToast("success", "Email Sent", `Supply alert email sent to ${to}`)
+}
+
+function saveSupplyDraft(button) {
+  const card = button.closest(".churn-action-card")
+  const to = card.querySelector('[data-field="to"]').value
+  const subject = card.querySelector('[data-field="subject"]').value
+  const body = card.querySelector('[data-field="body"]').value
+
+  console.log("[v0] Saving supply email draft:", { to, subject, body })
+
+  showToast("success", "Draft Saved", "Email draft saved successfully")
+}
+
+function logSupplyTask(index, actionData) {
+  console.log("[v0] Logging supply task:", index, actionData)
+
+  const payload = {
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+    tasks: [
+      {
+        title: actionData.title || actionData.action || "Supply Chain Task",
+        description: actionData.description || actionData.owner || "",
+      },
+    ],
+  }
+
+  console.log("[v0] Sending task payload:", payload)
+
+  fetch(`${API_CONFIG.baseUrl}/agent/action/create-crm-task`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] Task logged successfully:", data)
+      showToast("success", "Task Logged", "Supply chain task logged to CRM")
+    })
+    .catch((error) => {
+      console.error("[v0] Error logging task:", error)
+      showToast("error", "Failed to Log Task", "Please check console for details.")
     })
 }
 
