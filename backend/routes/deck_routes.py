@@ -6,11 +6,12 @@ import os
 
 deck_bp = Blueprint("ppt", __name__)
 
-@deck_bp.route("/generate_deck", methods=["POST"])
+@deck_bp.route("/agent/action/generate-deck", methods=["POST"])
 def generate_ppt():
     logger.info("Received request to generate DECK")
 
-    content = request.json.get("content")
+    # content = request.json.get("content")
+    content = request.get_json()
     if not content:
         return jsonify({"error": "content is required"}), 400
     
@@ -21,4 +22,8 @@ def generate_ppt():
 
     output = generate_deck(content, file_path)
             
-    return send_file(output, as_attachment=True)
+    return send_file(
+        output, 
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )
