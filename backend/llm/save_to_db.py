@@ -529,7 +529,8 @@ def save_quality_output(db, payload, agent_run_id):
 def save_churn_output(db, payload, agent_run_id, account_id):
     insert_churn_rca(db, payload["rca"], agent_run_id, account_id)
     insert_churn_brief(db, payload["brief"], agent_run_id,account_id )
-    insert_churn_action(db, payload["actions"], agent_run_id, account_id)
+    for action in payload["actions"]["actions"]:
+        insert_churn_action(db, action, agent_run_id, account_id)
     insert_churn_email(db, payload["email"], agent_run_id, account_id)
 
 def save_supply_output(db, payload, agent_run_id, account_id):
