@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, ".env"))
 
-DATABASE_URL = "postgresql+psycopg2://postgres:admin#123@localhost:5432/manufacturing_core_db"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # def get_db():
 #     return psycopg2.connect(
