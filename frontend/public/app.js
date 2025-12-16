@@ -3143,12 +3143,14 @@ function sendEmail(button) {
     .then((response) => response.json())
     .then((data) => {
       console.log("[v0] Email sent successfully:", data)
-      alert("Email sent successfully!")
+      // alert("Email sent successfully!")
+      showToast("success", "Email Sent", "Email sent successfully:")
     })
     .catch((error) => {
       console.error("[v0] Error sending email:", error)
       alert("Failed to send email. Check console for details.")
     })
+    showToast("success", "Email Sent", `Retention email sent to ${to}`)
 }
 
 function saveDraft(button) {
@@ -3251,7 +3253,8 @@ function createTasks(button) {
     .then((response) => response.json())
     .then((data) => {
       console.log("[v0] Tasks created successfully:", data)
-      alert("Tasks created successfully!")
+      showToast("success", "Task Logged", "Tasks created successfully")
+      // alert("Tasks created successfully!")
     })
     .catch((error) => {
       console.error("[v0] Error creating tasks:", error)
@@ -3586,7 +3589,7 @@ function logCRMTask(actionType, actionData) {
   fetch(`${API_CONFIG.baseUrl}/agent/action/create-crm-task`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.JSON.stringify(payload),
+    body: JSON.stringify(payload),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -3618,7 +3621,7 @@ function downloadExpansionDeck(deckTitle, deckData) {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `${deckTitle.replace(/\s+/g, "-")}.pdf` // Sanitize title for filename
+      a.download = `${deckTitle.replace(/\s+/g, "-")}.pptx` // Sanitize title for filename
       a.click()
       showToast("success", "Deck Downloaded", "Your commercial opportunity deck has been generated.")
     })
@@ -3664,7 +3667,7 @@ function renderQBRActions(data, container) {
                 </div>
                 <div class="eo-action-description">${action.description || ""}</div>
               </div>
-              <button class="eo-action-btn" onclick="logCRMTask('${action.type}', ${JSON.stringify(action).replace(/"/g, "&quot;")})">Log Task</button>
+              <button class="eo-task-btn" onclick="logCRMTask('${action.type}', ${JSON.stringify(action).replace(/"/g, "&quot;")})">Log Task</button>
             </div>
           `,
             )
@@ -3903,7 +3906,7 @@ function downloadQBRDeck(deckTitle, deckData) {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `${deckTitle.replace(/\s+/g, "-")}.pdf`
+      a.download = `${deckTitle.replace(/\s+/g, "-")}.pptx`
       a.click()
       showToast("success", "QBR Deck Downloaded", "Your QBR deck has been generated.")
     })
