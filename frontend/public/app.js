@@ -1464,7 +1464,13 @@ async function refreshAlerts() {
 // ========================================
 
 async function init() {
-  console.log("[v0] Init function called")
+  console.log("[v0] Initializing application...")
+
+  // Check if button exists
+  const runAnalysisBtn = document.getElementById("runAnalysisBtn")
+  console.log("[v0] runAnalysisBtn element:", runAnalysisBtn)
+  console.log("[v0] runAnalysisBtn display style:", runAnalysisBtn ? runAnalysisBtn.style.display : "element not found")
+
   // Set initial theme
   document.documentElement.setAttribute("data-theme", state.theme)
 
@@ -3150,7 +3156,7 @@ function sendEmail(button) {
       console.error("[v0] Error sending email:", error)
       alert("Failed to send email. Check console for details.")
     })
-    showToast("success", "Email Sent", `Retention email sent to ${to}`)
+  showToast("success", "Email Sent", `Retention email sent to ${emailData.to}`)
 }
 
 function saveDraft(button) {
