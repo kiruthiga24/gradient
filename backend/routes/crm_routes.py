@@ -88,7 +88,8 @@ def send_apology_email():
             "email_id": email_id
         }), 200
 
-    except Exception:
+    except Exception as e:
+        print(e)
         return jsonify({
             "success": False,
             "message": "Failed to send email"

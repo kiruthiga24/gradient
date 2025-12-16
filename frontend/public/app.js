@@ -1227,6 +1227,16 @@ const agentNames = {
 // API Configuration
 // ========================================
 
+const API_CONFIG = {
+  baseUrl: "http://localhost:5000",
+  endpoints: {
+    getSignals: (useCase) => `/signals/left-pane/${useCaseToAPIParam[useCase] || "churn_risk"}`,
+    getAgentData: (useCase, accountId, agentRunId) =>
+      `/agent/data/${useCaseToAPIParam[useCase] || "quality_incident"}/${accountId}/${agentRunId}`,
+    runAnalysis: (useCase) => `/agent/run-analysis/${useCaseToAPIParam[useCase] || "churn_risk"}`,
+  },
+}
+
 const useCaseToAPIParam = {
   // Short names from navigation/state
   churn: "churn_risk",
@@ -1241,15 +1251,6 @@ const useCaseToAPIParam = {
   qbr_auto_generation: "qbr_auto_generation",
   supply_risk: "supply_risk",
   quality_incident: "quality_incident",
-}
-
-const API_CONFIG = {
-  baseUrl: "http://localhost:5000",
-  endpoints: {
-    getSignals: (useCase) => `/signals/left-pane/${useCaseToAPIParam[useCase] || "churn_risk"}`,
-    getAgentData: (useCase, accountId, agentRunId) =>
-      `/agent/data/${useCaseToAPIParam[useCase] || "quality_incident"}/${accountId}/${agentRunId}`,
-  },
 }
 
 // ========================================
@@ -1459,6 +1460,64 @@ async function refreshAlerts() {
   renderAlerts()
 }
 
+// Added function to handle running analysis
+async function handleRunAnalysis() {
+  console.log("[v0] Run Analysis clicked for use case:", state.currentUseCase)
+
+  const runAnalysisBtn = document.getElementById("runAnalysisBtn")
+  if (!runAnalysisBtn) return
+
+  // Disable button and show loading state
+  runAnalysisBtn.disabled = true
+  const originalText = runAnalysisBtn.innerHTML
+  runAnalysisBtn.innerHTML = '<span class="btn-icon">⏳</span> Running Analysis...'
+
+  try {
+    const useCase = state.currentUseCase
+    const useCaseParam = useCaseToAPIParam[useCase] || "churn_risk"
+    const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.runAnalysis(useCase)}`
+
+    console.log("[v0] Calling POST API:", url)
+    console.log("[v0] Use case parameter:", useCaseParam)
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        use_case: useCaseParam,
+        account_id: state.selectedAlert?.id || null,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+    console.log("[v0] Run Analysis API response:", result)
+
+    // Show success message
+    showToast("Analysis started successfully!", "success")
+
+    // Optionally refresh the data after analysis completes
+    if (state.selectedAlert) {
+      // Wait a moment for the analysis to process
+      setTimeout(() => {
+        selectAlert(state.selectedAlert)
+      }, 2000)
+    }
+  } catch (error) {
+    console.error("[v0] Error calling Run Analysis API:", error)
+    showToast("Failed to start analysis. Please try again.", "error")
+  } finally {
+    // Re-enable button
+    runAnalysisBtn.disabled = false
+    runAnalysisBtn.innerHTML = originalText
+  }
+}
+
 // ========================================
 // Initialization
 // ========================================
@@ -1547,6 +1606,11 @@ function setupEventListeners() {
 
   // Theme toggle
   elements.themeToggle.addEventListener("click", toggleTheme)
+
+  const runAnalysisBtn = document.getElementById("runAnalysisBtn")
+  if (runAnalysisBtn) {
+    runAnalysisBtn.addEventListener("click", handleRunAnalysis)
+  }
 
   // Create agent button
   elements.createAgentBtn.addEventListener("click", openModal)
@@ -4183,14 +4247,35 @@ function editChurnEmail(button) {
 
 function sendChurnEmail(button) {
   const card = button.closest(".churn-action-card")
-  const to = card.querySelector('[data-field="to"]').value
-  const subject = card.querySelector('[data-field="subject"]').value
-  const body = card.querySelector('[data-field="body"]').value
+  const emailData = {
+    to: card.querySelector('[data-field="to"]').value,
+    subject: card.querySelector('[data-field="subject"]').value,
+    body: card.querySelector('[data-field="body"]').value,
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+  }
 
-  console.log("[v0] Sending churn email:", { to, subject, body })
+  console.log("[v0] Sending email:", emailData)
+
+  // TODO: Make POST API call to send email
+  fetch(`${API_CONFIG.baseUrl}/agent/action/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(emailData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] Email sent successfully:", data)
+      // alert("Email sent successfully!")
+      showToast("success", "Email Sent", "Email sent successfully:")
+    })
+    .catch((error) => {
+      console.error("[v0] Error sending email:", error)
+      alert("Failed to send email. Check console for details.")
+    })
 
   // TODO: Implement actual email sending
-  showToast("success", "Email Sent", `Retention email sent to ${to}`)
+  showToast("success", "Email Sent", `Retention email sent`)
 }
 
 function saveChurnDraft(button) {
@@ -4500,13 +4585,34 @@ function editSupplyEmail(button) {
 
 function sendSupplyEmail(button) {
   const card = button.closest(".churn-action-card")
-  const to = card.querySelector('[data-field="to"]').value
-  const subject = card.querySelector('[data-field="subject"]').value
-  const body = card.querySelector('[data-field="body"]').value
+  const emailData = {
+    to: card.querySelector('[data-field="to"]').value,
+    subject: card.querySelector('[data-field="subject"]').value,
+    body: card.querySelector('[data-field="body"]').value,
+    account_id: state.selectedAlert?.id,
+    agent_run_id: state.selectedAlert?.agentRunId,
+  }
 
-  console.log("[v0] Sending supply email:", { to, subject, body })
+  console.log("[v0] Sending email:", emailData)
 
-  showToast("success", "Email Sent", `Supply alert email sent to ${to}`)
+  // TODO: Make POST API call to send email
+  fetch(`${API_CONFIG.baseUrl}/agent/action/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(emailData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("[v0] Email sent successfully:", data)
+      // alert("Email sent successfully!")
+      showToast("success", "Email Sent", "Email sent successfully:")
+    })
+    .catch((error) => {
+      console.error("[v0] Error sending email:", error)
+      alert("Failed to send email. Check console for details.")
+    })
+
+  showToast("success", "Email Sent", `Supply alert email sent`)
 }
 
 function saveSupplyDraft(button) {
