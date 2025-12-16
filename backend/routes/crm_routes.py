@@ -94,3 +94,37 @@ def send_apology_email():
             "success": False,
             "message": "Failed to send email"
         }), 500
+    
+
+@crm_bp.route("/agent/run-analysis/<use_case>", methods=["POST"])
+def run_analysis(use_case):
+
+    logger.info(
+        f"Inside run analysis: {use_case}"
+    )
+    resp = requests.post(
+        f"http://127.0.0.1:5000/signals/run",
+        timeout=5
+    )
+    health = resp.json()
+
+    usecase_url = {
+        "churn_risk": "http://127.0.0.1:5000/run/churn-risk",
+        "expansion_opportunity": "http://127.0.0.1:5000/run/expansion/from-table",
+        "quality_incident": "http://127.0.0.1:5000/run/quality/from-table",
+        "qbr_auto_generation": "http://127.0.0.1:5000/run/qbr/from-table",
+        "supply_risk": "http://127.0.0.1:5000/run/supply-risk"
+    }
+
+    resp = requests.post(
+        usecase_url[use_case],
+        timeout=5
+    )
+    health = resp.json()
+
+    return jsonify({
+        "health": health
+    }), 200
+    
+
+    
