@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Dashboard | Intelligent Operations Platform</title>
+  <meta name="description" content="AI-powered dashboard for managing expansion, churn, operations, and supply chain alerts with intelligent automation.">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="logo-text">AgentOS</span>
+      </div>
+    </div>
+    
+    <nav class="header-center">
+      <div class="use-case-tabs">
+        <button class="tab" data-usecase="expansion">
+          <span class="tab-icon">📈</span>
+          Expansion
+        </button>
+        <button class="tab active" data-usecase="churn">
+          <span class="tab-icon">⚠️</span>
+          Churn
+        </button>
+        <button class="tab" data-usecase="quality">
+          <span class="tab-icon">⚙️</span>
+          Quality Incidents
+        </button>
+        <button class="tab" data-usecase="qbr">
+          <span class="tab-icon">📊</span>
+          QBR
+        </button>
+        <button class="tab" data-usecase="supply">
+          <span class="tab-icon">📦</span>
+          Supply
+        </button>
+      </div>
+    </nav>
+    
+    <div class="header-right">
+      <button class="icon-btn" id="createAgentBtn" title="Create New Agent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="themeToggle" title="Toggle Theme">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <div class="profile">
+        <div class="avatar">
+          <span>JD</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="dashboard">
+    <!-- Left Panel: Alerts -->
+    <aside class="panel panel-left">
+      <div class="panel-header">
+        <h2>Active Alerts</h2>
+        <span class="badge" id="alertCount">6</span>
+      </div>
+      <div class="alerts-list" id="alertsList">
+        <!-- Alerts injected by JS -->
+      </div>
+    </aside>
+
+    <!-- Center Panel: AI Analysis -->
+    <section class="panel panel-center">
+      <div class="analysis-header">
+        <div class="agent-info">
+          <div class="agent-avatar">
+            <div class="agent-avatar-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                <circle cx="12" cy="10" r="3"/>
+                <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+              </svg>
+            </div>
+            <span class="agent-pulse"></span>
+          </div>
+          <div class="agent-details">
+            <h3 id="agentName">Churn Prevention Agent</h3>
+            <span class="agent-status">
+              <span class="status-dot"></span>
+              Analyzing
+            </span>
+          </div>
+        </div>
+        <!-- Added Run Analysis button -->
+        <button class="btn-run-analysis" id="runAnalysisBtn" style="display: block;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+          Run Analysis
+        </button>
+      </div>
+      
+      <div class="analysis-content" id="analysisContent">
+        <!-- Quality Incident View -->
+        <div id="qualityIncidentView" style="display: none;">
+          <!-- Quality incident specific content will be rendered here -->
+        </div>
+        
+        <!-- Expansion Opportunity View -->
+        <div id="expansionOpportunityView" style="display: none;">
+          <!-- Expansion opportunity specific content will be rendered here -->
+        </div>
+
+        
+        
+        <!-- Default/Legacy View -->
+        <div id="defaultAnalysisView">
+          <div class="analysis-section" id="summarySection">
+            <div class="section-header">
+              <span class="section-icon">📊</span>
+              <h4>Executive Summary</h4>
+            </div>
+            <div class="typing-container" id="summaryText">
+              <!-- Typing animation content -->
+            </div>
+          </div>
+          
+          <div class="analysis-section" id="patternsSection" style="opacity: 0;">
+            <div class="section-header">
+              <span class="section-icon">🔍</span>
+              <h4>Detected Patterns</h4>
+            </div>
+            <div class="patterns-grid" id="patternsGrid">
+              <!-- Patterns injected by JS -->
+            </div>
+          </div>
+          
+          <div class="analysis-section" id="scenariosSection" style="opacity: 0;">
+            <div class="section-header">
+              <span class="section-icon">🎯</span>
+              <h4>Recommended Scenarios</h4>
+            </div>
+            <div class="scenarios-list" id="scenariosList">
+              <!-- Scenarios injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="analysis-actions">
+        <!-- Approve Actions, Simulate, and View Evidence buttons removed -->
+      </div>
+    </section>
+
+    <!-- Right Panel: Actions -->
+    <aside class="panel panel-right">
+      <!-- Pending Actions header, Approve All and Export buttons removed -->
+      <div class="actions-list" id="actionsList">
+        <!-- Default/Legacy actions -->
+      </div>
+      
+      <div id="qualityIncidentActions" style="display: none;">
+        <!-- Quality incident specific actions -->
+      </div>
+      
+      <div id="expansionOpportunityActions" style="display: none;">
+        <!-- Expansion opportunity specific actions -->
+      </div>
+    </aside>
+  </main>
+
+  <!-- Agent Creation Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="createAgentModal">
+      <div class="modal-header">
+        <h2>Create New Agent</h2>
+        <button class="modal-close" id="modalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-progress">
+        <div class="progress-step active" data-step="1">
+          <span class="step-number">1</span>
+          <span class="step-label">Basics</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="2">
+          <span class="step-number">2</span>
+          <span class="step-label">Scenarios</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="3">
+          <span class="step-number">3</span>
+          <span class="step-label">Data</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="4">
+          <span class="step-number">4</span>
+          <span class="step-label">Preview</span>
+        </div>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Step 1: Basics -->
+        <div class="modal-step active" data-step="1">
+          <div class="form-group">
+            <label for="agentNameInput">Agent Name</label>
+            <input type="text" id="agentNameInput" placeholder="e.g., Revenue Expansion Bot">
+          </div>
+          <div class="form-group">
+            <label for="agentTypeSelect">Agent Type</label>
+            <select id="agentTypeSelect">
+              <option value="expansion">Expansion</option>
+              <option value="churn">Churn Prevention</option>
+              <option value="quality">Quality Incidents</option>
+              <option value="supply">Supply Chain</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="agentDescription">Description</label>
+            <textarea id="agentDescription" placeholder="Describe what this agent should monitor and act upon..."></textarea>
+          </div>
+        </div>
+        
+        <!-- Step 2: Scenarios -->
+        <div class="modal-step" data-step="2">
+          <div class="form-group">
+            <label>Trigger Scenarios</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Low engagement detected
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Usage decline > 20%
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox"> Payment failure
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox"> Support tickets spike
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Contract renewal approaching
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="thresholdInput">Alert Threshold Score</label>
+            <input type="range" id="thresholdInput" min="0" max="100" value="70">
+            <span class="range-value" id="thresholdValue">70</span>
+          </div>
+        </div>
+        
+        <!-- Step 3: Data Sources -->
+        <div class="modal-step" data-step="3">
+          <div class="form-group">
+            <label>Connected Data Sources</label>
+            <div class="data-sources">
+              <div class="data-source active">
+                <span class="source-icon">📊</span>
+                <span>Analytics</span>
+              </div>
+              <div class="data-source active">
+                <span class="source-icon">💬</span>
+                <span>CRM</span>
+              </div>
+              <div class="data-source">
+                <span class="source-icon">📧</span>
+                <span>Email</span>
+              </div>
+              <div class="data-source active">
+                <span class="source-icon">🎫</span>
+                <span>Support</span>
+              </div>
+              <div class="data-source">
+                <span class="source-icon">💰</span>
+                <span>Billing</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="refreshRate">Data Refresh Rate</label>
+            <select id="refreshRate">
+              <option value="realtime">Real-time</option>
+              <option value="hourly" selected>Hourly</option>
+              <option value="daily">Daily</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Step 4: Preview -->
+        <div class="modal-step" data-step="4">
+          <div class="preview-card">
+            <div class="preview-header">
+              <div class="preview-avatar">🤖</div>
+              <div class="preview-info">
+                <h4 id="previewName">New Agent</h4>
+                <span id="previewType" class="preview-type">Churn Prevention</span>
+              </div>
+            </div>
+            <div class="preview-body">
+              <div class="preview-stat">
+                <span class="stat-label">Triggers</span>
+                <span class="stat-value" id="previewTriggers">3</span>
+              </div>
+              <div class="preview-stat">
+                <span class="stat-label">Data Sources</span>
+                <span class="stat-value" id="previewSources">3</span>
+              </div>
+              <div class="preview-stat">
+                <span class="stat-label">Threshold</span>
+                <span class="stat-value" id="previewThreshold">70</span>
+              </div>
+            </div>
+          </div>
+          <p class="preview-note">Your agent will start monitoring immediately after creation.</p>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="modalBack" style="display: none;">Back</button>
+        <button class="btn btn-primary" id="modalNext">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

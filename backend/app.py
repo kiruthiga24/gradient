@@ -1,4 +1,6 @@
 from flask import Flask
+from flask_cors import CORS
+
 from routes.health import test_bp
 from routes.accounts_routes import accounts_bp
 from routes.customers_routes import customers_bp
@@ -23,9 +25,14 @@ from routes.email_drafts_routes import email_drafts_bp
 from routes.crm_activities_routes import crm_activities_bp
 from routes.recommendations_routes import recommendations_bp
 from routes.llm_prompts_routes import llm_prompts_bp
+from routes.deck_routes import deck_bp
+from routes.crm_routes import crm_bp
 from routes.vector_index_metadata_routes import vector_index_metadata_bp
 from routes.agent_memory_routes import agent_memory_bp
+from routes.console_api import console
+
 app = Flask(__name__)
+CORS(app)
 
 # Register Blueprints
 app.register_blueprint(accounts_bp)
@@ -53,6 +60,12 @@ app.register_blueprint(recommendations_bp)
 app.register_blueprint(llm_prompts_bp)
 app.register_blueprint(vector_index_metadata_bp)
 app.register_blueprint(agent_memory_bp)
+app.register_blueprint(console)
+app.register_blueprint(deck_bp)
+app.register_blueprint(crm_bp)
+
+
 
 if __name__ == "__main__":
+    
     app.run(port=5000, debug=True)        # Backend runs here
