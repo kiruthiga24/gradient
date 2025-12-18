@@ -1,6 +1,8 @@
 # scripts/insert_expansion_rca.py
 
 import uuid
+from sqlalchemy import text
+
 from models.base_model import ExpansionRcaAnalysis, ExpansionBrief, ExpansionDeck, ExpansionRecommendation, ExpansionRevenueEstimate, \
       QbrAction, QbrBrief, QbrDeck, QbrOpportunity, QbrRcaAnalysis, QbrTalkingPoints, RcaAnalysis, ChurnBriefs, Recommendations, EmailDrafts, \
       SupplyRca, SupplyBrief, SupplyAction, SupplyEmail
@@ -503,6 +505,15 @@ def insert_quality_email(db, email, agent_run_id, account_id):
         db.rollback()
         print("❌ Quality Email insert failed:", str(e))
 
+
+def truncate_qbr_tables(db):
+    db.execute(text("TRUNCATE TABLE qbr_rca_analysis CASCADE"))
+    db.execute(text("TRUNCATE TABLE qbr_talking_points CASCADE"))
+    db.execute(text("TRUNCATE TABLE qbr_opportunities CASCADE"))
+    db.execute(text("TRUNCATE TABLE qbr_decks CASCADE"))
+    db.execute(text("TRUNCATE TABLE qbr_briefs CASCADE"))
+    db.commit()
+    
 def save_expansion_output(db, payload, agent_run_id):
     insert_expansion_rca(db, payload["rca"], agent_run_id, payload["account_id"])
     insert_expansion_brief(db, payload["brief"], agent_run_id, payload["account_id"])

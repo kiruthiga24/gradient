@@ -7,6 +7,7 @@ from models.base_model import LLMSignalPayloads, RcaAnalysis, ChurnBriefs, Quali
 from llm.orchestrator import LLMOrchestrator
 import json
 from datetime import datetime, timezone
+from llm.save_to_db import truncate_qbr_tables
 
 from decimal import Decimal
 
@@ -222,38 +223,34 @@ def run_qbr():
         print("*********")
         print("Row", rows)
         
-        responses = []
+        
+        row_data = []
         for row in rows:
             payload_id = row.payload_id
             score = row.final_score
             agent_run_id = row.agent_run_id
-            print(agent_run_id)
-            payload_json = row.payload_json
+            payload_json = row.payload_json  # Access here before any commit
             payload_raw = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
             payload = to_json_safe(payload_raw)
             payload["payload_id"] = str(payload_id)
             payload["final_score"] = float(score) if isinstance(score, Decimal) else score
-            print("Payload", payload)
-
-        # Call orchestrator
-            result = llm.run_pipeline(
-                db,
-                use_case="qbr",
-                payload=payload,
-                agent_run_id=agent_run_id
-            )
-
-            responses.append({
-                "payload_id": str(payload_id),
-                "agent_run_id": str(agent_run_id),
-                "llm_output": to_json_safe(result)  # Ensure JSON serializable
+            row_data.append({
+                "payload": payload,
+                "agent_run_id": agent_run_id
             })
 
+        truncate_qbr_tables(db)  # Safe now - no ORM instance access after
+
+        responses = []
+        for data in row_data:
+            result = llm.run_pipeline(db, use_case="qbr", payload=data["payload"], agent_run_id=data["agent_run_id"])
+            responses.append({"payload_id": data["payload"]["payload_id"], "agent_run_id": str(data["agent_run_id"]), "llm_output": to_json_safe(result)})
+
         return jsonify({
-            "status": "processed",
-            "records_processed": len(responses),
-            "results": responses
-        })
+                    "status": "processed",
+                    "records_processed": len(responses),
+                    "results": responses
+                })
 
     except Exception as e:
         logger.error(f"Signal detection failed: {str(e)}")
